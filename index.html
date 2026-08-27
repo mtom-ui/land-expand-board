@@ -1,0 +1,2712 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Land &amp; Expand — Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='9' cy='11' r='6' fill='%2367C3E0'/%3E%3Ccircle cx='14' cy='9' r='6' fill='%2318C7A8' opacity='.85'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --cream: #FFFFFF;              /* Grund hell */
+    --ink: #001729;               /* Textfarbe hell-BG */
+    --accent: #0865bc;            /* aktiv / Marke */
+    --accent-dark: #065196;
+    --muted: #4A6079;
+    --muted-hell: #8AA0B5;
+    --hilfstext: rgba(0,23,41,.30);
+    --line: rgba(0,23,41,.14);
+    --rahmen: rgba(0,23,41,.20);
+    --line-zart: rgba(0,23,41,.07);
+    --panel: #E6F0F8;             /* helle Marken-Fläche */
+    --feld-radius: 10px;
+    --radius: 12px;
+    --overdue: #d64828;
+    --on-accent: #FFFFFF;
+    --weich: cubic-bezier(.2,.8,.25,1);
+    --shadow-lg: 0 24px 60px rgba(0,23,41,.16);
+    --chip: rgba(0,23,41,.05);
+    --phase-w: 520px;
+  }
+  body.dark {
+    color-scheme: dark;
+    --cream: #001729;             /* dunkelster Marken-Grund */
+    --ink: #FFFFFF;
+    --accent: #50DAFF;            /* leuchtendes Cyan = aktiv */
+    --accent-dark: #67B5FF;
+    --muted: #B7D7F4;
+    --muted-hell: #6E8FB0;
+    --hilfstext: rgba(183,215,244,.32);
+    --line: rgba(183,215,244,.16);
+    --rahmen: rgba(183,215,244,.24);
+    --line-zart: rgba(183,215,244,.08);
+    --panel: #065196;
+    --overdue: #FF8A6B;
+    --on-accent: #001729;
+    --chip: rgba(183,215,244,.08);
+    --shadow-lg: 0 24px 60px rgba(0,0,0,.5);
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: "Open Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: var(--cream);
+    display: flex; flex-direction: column;
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font-family: inherit; font-size: 12px; cursor: pointer; }
+
+  /* ===== Kopfzeile ===== */
+  header { flex: 0 0 auto; padding: 18px 40px 12px; border-bottom: 1px solid var(--line); background: var(--cream); }
+  .head-row { display: flex; align-items: baseline; gap: 20px; }
+  .brand { font-size: 21px; font-weight: 400; letter-spacing: -.015em; }
+  .brand b { color: var(--accent); font-weight: 400; }
+  .head-spacer { flex: 1; }
+  .btn { border: 1px solid var(--rahmen); background: none; color: var(--muted); padding: 7px 13px;
+         border-radius: var(--feld-radius); transition: border-color .3s var(--weich), color .3s var(--weich); }
+  .btn:hover { border-color: var(--muted); color: var(--ink); }
+  .btn.primary { color: var(--accent); border-color: var(--accent); }
+  .btn.active  { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  .btn.primary:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .sync-wrap { position: relative; display: inline-flex; }
+  .sync { font-size: 11px; letter-spacing: .04em; padding: 4px 6px; white-space: nowrap; cursor: pointer;
+          border-radius: var(--feld-radius); transition: opacity .4s, background .15s; }
+  .sync:hover { background: var(--chip); }
+  .last-upd { font-size: 11px; color: var(--muted-hell); white-space: nowrap; }
+  .sync.ok   { color: var(--muted-hell); }
+  .sync.busy { color: var(--accent); }
+  .sync.err  { color: var(--overdue); font-weight: 600; }
+  /* "ausgefadet": dezent sichtbar statt unsichtbar, damit weiter anklickbar */
+  .sync.fade { opacity: .5; }
+  .sync.fade:hover { opacity: 1; }
+  /* Speicher-Panel (Verlauf) */
+  .save-panel { position: absolute; top: calc(100% + 8px); right: 0; z-index: 60; width: 300px; max-height: 60vh;
+                overflow-y: auto; background: var(--cream); border: 1px solid var(--line); border-radius: 12px;
+                box-shadow: 0 12px 40px rgba(0,0,0,.14); padding: 12px; }
+  .sp-head { font-size: 9px; font-weight: 400; letter-spacing: .14em; text-transform: uppercase; color: var(--muted-hell);
+             margin-bottom: 10px; }
+  .sp-list { display: flex; flex-direction: column; gap: 2px; }
+  .sp-item { display: flex; align-items: flex-start; gap: 9px; padding: 7px 6px; border-radius: 8px; }
+  .sp-item:hover { background: var(--chip); }
+  .sp-check { flex: 0 0 auto; color: var(--accent); font-size: 12px; line-height: 1.4; }
+  .sp-main { min-width: 0; }
+  .sp-label { font-size: 12.5px; color: var(--ink); overflow-wrap: anywhere; }
+  .sp-meta { font-size: 10.5px; color: var(--muted-hell); margin-top: 1px; }
+  .sp-pending { font-size: 12px; color: var(--accent); padding: 6px 6px 10px; }
+  .sp-empty { font-size: 12px; color: var(--muted); padding: 6px; }
+  .sp-error { font-size: 12px; color: var(--overdue); background: color-mix(in srgb, var(--overdue) 8%, transparent);
+              border-radius: 8px; padding: 9px 10px; margin-bottom: 10px; line-height: 1.45; }
+  .sp-error-job { color: var(--muted); font-size: 11px; margin-top: 4px; }
+  .data-warn { display: none; font-size: 11px; font-weight: 600; letter-spacing: .04em; color: var(--overdue);
+               white-space: nowrap; cursor: pointer; padding: 4px 8px; border: 1px solid var(--overdue);
+               border-radius: var(--feld-radius); }
+  .data-warn.show { display: inline-block; }
+  .data-warn:hover { background: color-mix(in srgb, var(--overdue) 12%, transparent); }
+
+  /* ===== Filterzeile ===== */
+  .filter-row { display: flex; align-items: center; gap: 14px; padding: 12px 40px; border-bottom: 1px solid var(--line);
+                background: var(--cream); }
+
+  /* ===== Fortschrittsbalken oben ===== */
+  .progress-row { display: flex; gap: 48px; padding: 16px 40px 18px; border-bottom: 1px solid var(--line); background: var(--cream); }
+  .prog { flex: 1 1 0; min-width: 0; }
+  .prog-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
+  .prog-label { font-size: 9.5px; font-weight: 400; letter-spacing: .15em; text-transform: uppercase; color: var(--muted-hell); }
+  .prog-val { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .prog-track { position: relative; height: 7px; border-radius: 20px; background: var(--chip); overflow: hidden; }
+  /* Balken 1: Zeit — Phasenabschnitte (nur Farbe, keine harten Striche) + Heute-Marker */
+  .prog-phases { position: absolute; inset: 0; }
+  .prog-phase-seg { position: absolute; top: 0; bottom: 0; box-sizing: border-box; }
+  #progTimeTrack { overflow: visible; }
+  .prog-today { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--accent);
+                transform: translateX(-1px); transition: left .4s var(--weich); z-index: 2; }
+  .prog-today-dot { position: absolute; top: -4px; left: 50%; transform: translateX(-50%);
+                    width: 8px; height: 8px; border-radius: 50%; background: var(--accent);
+                    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent); }
+  /* Phasennamen unter dem Zeitbalken */
+  .prog-phase-labels { position: relative; height: 14px; margin-top: 6px; }
+  .prog-phase-lbl { position: absolute; top: 0; font-size: 10px; color: var(--muted-hell); white-space: nowrap;
+                    overflow: hidden; text-overflow: ellipsis; transform: translateX(-50%);
+                    padding: 0 3px; }
+  .prog-phase-lbl.active { color: var(--accent); font-weight: 600; }
+  /* Balken 2: erledigte Tickets — einfacher Füllbalken */
+  .prog-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 20px; background: var(--accent);
+               transition: width .4s var(--weich); }
+  .prog-ends { display: flex; justify-content: space-between; margin-top: 6px; font-size: 10px; color: var(--muted-hell);
+               font-variant-numeric: tabular-nums; }
+  @media (max-width: 760px){ .progress-row { flex-direction: column; gap: 18px; } }
+  .filter-label { font-size: 9.5px; font-weight: 400; letter-spacing: .15em; text-transform: uppercase; color: var(--muted-hell); }
+  .search { flex: 0 0 260px; padding: 8px 12px; border: 1px solid var(--rahmen); border-radius: var(--feld-radius);
+            font-family: inherit; font-size: 13px; color: var(--ink); background: none; transition: border-color .3s var(--weich); }
+  .search:focus { outline: none; border-color: var(--accent); }
+  .search::placeholder { color: var(--hilfstext); }
+
+  /* Dropdown-Filter (Owner, Status) */
+  .dd { position: relative; }
+  .dd-trigger { display: inline-flex; align-items: center; gap: 8px; font-size: 10px; font-weight: 400;
+                letter-spacing: .12em; text-transform: uppercase; padding: 7px 12px; border-radius: var(--feld-radius);
+                border: 1px solid var(--rahmen); color: var(--muted); background: none;
+                transition: color .3s var(--weich), border-color .3s var(--weich); }
+  .dd-trigger:hover { color: var(--ink); border-color: var(--muted); }
+  .dd-trigger.has { color: var(--accent); border-color: var(--accent); }
+  .dd-trigger .caret { font-size: 8px; opacity: .7; }
+  .dd-trigger .cnt { color: var(--accent); font-variant-numeric: tabular-nums; }
+  .dd-panel { position: absolute; top: calc(100% + 6px); left: 0; z-index: 40; display: none; flex-direction: column;
+              gap: 2px; min-width: 180px; padding: 8px; background: var(--cream); border: 1px solid var(--line);
+              border-radius: var(--feld-radius); box-shadow: var(--shadow-lg); }
+  .dd-panel.open { display: flex; }
+  .dd-opt { display: flex; align-items: center; gap: 10px; padding: 7px 9px; border-radius: 7px; cursor: pointer;
+            font-size: 13px; color: var(--ink); user-select: none; }
+  .dd-opt:hover { background: var(--chip); }
+  .dd-opt .box { width: 14px; height: 14px; flex: 0 0 auto; border: 1.5px solid var(--muted); border-radius: 4px;
+                 display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
+  .dd-opt.sel .box { background: var(--accent); border-color: var(--accent); }
+  .dd-opt.sel .box::after { content: "✓"; color: var(--on-accent); font-size: 10px; }
+  .dd-clear { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted-hell);
+              background: none; border: none; border-top: 1px solid var(--line); margin-top: 4px; padding: 8px 9px 4px;
+              text-align: left; }
+  .dd-clear:hover { color: var(--accent); }
+
+  /* ===== Board-Fläche: waagerecht durch Phasen scrollen ===== */
+  .board-scroll { flex: 1 1 auto; overflow-x: auto; overflow-y: hidden; padding: 22px 40px 40px; }
+  .board { display: flex; gap: 26px; height: 100%; align-items: stretch; min-height: 0; }
+
+  /* ===== Aufgaben-Ansicht (Liste offener Tasks/Subtasks je Owner) ===== */
+  .tasks-view { flex: 1 1 auto; overflow-y: auto; padding: 22px 40px 60px; max-width: 900px; width: 100%; margin: 0 auto; }
+  .task-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+  .task-chip { font-size: 12px; letter-spacing: .02em; color: var(--muted); background: var(--chip);
+               border: 1px solid transparent; border-radius: 20px; padding: 6px 13px; cursor: pointer;
+               transition: color .2s, border-color .2s, background .2s; }
+  .task-chip:hover { color: var(--ink); }
+  .task-chip.sel { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  .task-chip .tc-num { font-size: 10px; color: var(--muted-hell); margin-left: 3px; }
+  .task-chip.sel .tc-num { color: var(--accent); }
+
+  .task-group { margin-bottom: 30px; }
+  .task-group-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px;
+                     padding-bottom: 7px; border-bottom: 1px solid var(--line); }
+  .tg-name { font-size: 15px; font-weight: 600; letter-spacing: -.01em; color: var(--ink); }
+  .tg-count { font-size: 11px; color: var(--muted-hell); letter-spacing: .04em; }
+
+  .task-list { display: flex; flex-direction: column; gap: 2px; }
+  .task-row { display: flex; align-items: center; gap: 11px; padding: 10px 12px; border-radius: 9px;
+              cursor: pointer; transition: background .12s; }
+  .task-row:hover { background: var(--chip); }
+  .task-dot { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; }
+  .task-dot.open { background: var(--accent); }
+  .task-dot.blk { background: var(--overdue); }
+  .task-check { flex: 0 0 auto; width: 18px; height: 18px; display: inline-flex; align-items: center;
+                justify-content: center; border-radius: 50%; color: var(--muted); font-size: 15px;
+                border: 1px solid transparent; transition: color .12s, border-color .12s; }
+  .task-check:hover { color: var(--accent); border-color: var(--accent); }
+  .task-main { flex: 1 1 auto; min-width: 0; }
+  .task-title { font-size: 13.5px; color: var(--ink); overflow-wrap: anywhere; }
+  .task-row.subtask .task-title { color: var(--muted); }
+  .task-sub { font-size: 11px; color: var(--muted-hell); letter-spacing: .01em; margin-top: 2px; overflow-wrap: anywhere; }
+  .task-kind { flex: 0 0 auto; font-size: 9px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+               color: var(--muted-hell); padding: 3px 8px; border-radius: 5px; background: var(--chip); }
+  .task-kind.sub { background: none; border: 1px solid var(--line); }
+  .task-row.blocked .task-title { color: var(--ink); }
+  .task-empty { color: var(--muted); font-size: 14px; padding: 40px 0; text-align: center; }
+  .phase { flex: 0 0 var(--phase-w); display: flex; flex-direction: column; min-height: 0; border-radius: 12px;
+           padding: 0 10px; margin: 0 -10px; transition: background .3s var(--weich); }
+  /* Aktive Phase: ganze Spalte dezent hinterlegt + Kopf hervorgehoben */
+  .phase.aktiv { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+  .phase-head { flex: 0 0 auto; padding: 8px 0 12px; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
+  .phase.aktiv .phase-head { border-bottom-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+  .phase-head.has-desc { cursor: default; }
+  .phase-name { font-size: 14px; font-weight: 400; letter-spacing: .04em; display: flex; align-items: center; gap: 6px; }
+  .phase.aktiv .phase-name { color: var(--accent); font-weight: 600; }
+  /* "AKTUELL"-Marker */
+  .phase-now { font-size: 8.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+               color: var(--on-accent); background: var(--accent); padding: 2px 7px; border-radius: 20px; margin-left: 4px; }
+  .phase-head.has-desc .phase-name .phase-caret { font-size: 8px; color: var(--muted-hell);
+                                            transition: color .15s, transform .2s var(--weich); }
+  .phase-head.has-desc:hover .phase-name .phase-caret { color: var(--accent); transform: rotate(180deg); }
+  .phase-dates { font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted-hell);
+                 margin-top: 5px; font-variant-numeric: tabular-nums; }
+  .phase.aktiv .phase-dates { color: var(--accent); }
+  /* Beschreibung klappt beim Hover über den Phasenkopf auf — wie das Ziel bei den Karten */
+  .phase-desc { font-size: 11.5px; color: var(--muted); line-height: 1.5; overflow-wrap: anywhere;
+                max-height: 0; overflow: hidden; opacity: 0; margin-top: 0;
+                transition: max-height .25s var(--weich), opacity .2s var(--weich), margin-top .25s var(--weich); }
+  .phase-head.has-desc:hover .phase-desc { max-height: 160px; opacity: 1; margin-top: 8px; }
+  .phase-body { flex: 1 1 auto; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; padding-right: 4px; }
+  /* Richtungspfeil zwischen den Phasen */
+  .phase-arrow { flex: 0 0 auto; display: flex; align-items: flex-start; justify-content: center;
+                 padding-top: 6px; margin: 0 -6px; color: var(--muted-hell); font-size: 18px; user-select: none; }
+  .phase-arrow span { line-height: 1; opacity: .55; }
+
+  /* Status-Reihen innerhalb einer Phase — feste Höhe, intern scrollbar */
+  .lane { display: flex; flex-direction: column; gap: 8px; }
+  .lane-label { font-size: 9px; font-weight: 400; letter-spacing: .18em; text-transform: uppercase; color: var(--muted-hell);
+                display: flex; align-items: baseline; gap: 7px; cursor: pointer; user-select: none;
+                transition: color .2s var(--weich); }
+  .lane-label:hover { color: var(--muted); }
+  .lane-label .arw { font-size: 8px; transition: transform .2s var(--weich); align-self: center; }
+  .lane.collapsed .arw { transform: rotate(-90deg); }
+  .lane-label .cnt { font-variant-numeric: tabular-nums; }
+  .lane.collapsed .lane-drop { display: none; }
+  .lane-drop { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-content: start;
+               height: var(--lane-h, 250px); overflow-y: auto; padding: 2px;
+               border: 1px dashed transparent; border-radius: var(--radius);
+               transition: border-color .12s, background .12s; }
+  /* Erledigt-Reihe kompakter (ist meist eingeklappt; ausgeklappt niedriger als die aktiven) */
+  .lane-done .lane-drop { height: var(--lane-done-h, 150px); }
+  .lane-drop.dragover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 7%, transparent); }
+  .lane-empty { grid-column: 1 / -1; align-self: start; font-size: 11px; color: var(--hilfstext); padding: 4px 2px; }
+  .lane-drop::-webkit-scrollbar { width: 7px; }
+  .lane-drop::-webkit-scrollbar-thumb { background: var(--line); border-radius: 20px; }
+
+  /* ===== Ticket-Karte ===== */
+  .card { border: 1px solid var(--line); border-radius: var(--radius); padding: 11px 12px; background: var(--panel);
+          cursor: pointer; transition: border-color .2s var(--weich), box-shadow .2s var(--weich); }
+  .card:hover { border-color: var(--accent); box-shadow: 0 3px 14px rgba(0,23,41,.08); }
+  .card.blocked { border-left: 3px solid var(--overdue); }
+  .card.done { opacity: .55; }
+  /* Kopf: Titel + Tag-Punkte in einer Zeile */
+  .card-top { display: flex; align-items: flex-start; gap: 8px; }
+  .card-title { flex: 1 1 auto; font-weight: 400; font-size: 14px; line-height: 1.35; letter-spacing: -.01em;
+                overflow-wrap: anywhere; }
+  .card.done .card-title { text-decoration: line-through; text-decoration-color: var(--muted-hell); }
+  /* Ziel-Vorschau: klappt beim Hover dezent auf */
+  .card-goal { font-size: 12px; color: var(--muted); line-height: 1.5; overflow-wrap: anywhere;
+               max-height: 0; overflow: hidden; opacity: 0; margin-top: 0;
+               transition: max-height .25s var(--weich), opacity .2s var(--weich), margin-top .25s var(--weich); }
+  .card:hover .card-goal { max-height: 72px; opacity: 1; margin-top: 7px;
+               display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+  /* Aktivitäts-Punkt: erstellt/geändert in den letzten 8h */
+  .fresh-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
+               margin-right: 6px; vertical-align: middle; position: relative; top: -1px; flex: 0 0 auto; }
+  /* Tags nur als farbige Punkte */
+  .tag-dots { flex: 0 0 auto; display: flex; flex-wrap: wrap; gap: 4px; padding-top: 4px; max-width: 46%; justify-content: flex-end; }
+  .tag-dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
+  /* Footer: Owner-Avatare links, Meta rechts */
+  .card-foot { display: flex; align-items: center; gap: 8px; margin-top: 9px; }
+  .avatars { display: flex; flex-wrap: wrap; gap: -2px; }
+  .avatar { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px;
+            border-radius: 50%; font-size: 9px; font-weight: 600; letter-spacing: .02em;
+            color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent);
+            border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); margin-right: -4px; }
+  .avatar:last-child { margin-right: 0; }
+  .foot-right { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; }
+  .card-meta { display: inline-flex; align-items: center; gap: 8px; font-size: 10px; letter-spacing: .04em;
+               color: var(--muted-hell); }
+  .card-meta .ic { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
+  .blk-dot { font-size: 11px; cursor: pointer; line-height: 1; }
+  .blk-dot:hover { transform: scale(1.15); }
+
+  /* ===== Overlay / Dialog ===== */
+  .overlay { position: fixed; inset: 0; background: rgba(32,48,58,.28); display: none; align-items: flex-start;
+             justify-content: center; z-index: 50; padding: 28px 20px; overflow-y: auto; }
+  .overlay.open { display: flex; }
+  .overlay.open > .modal { margin: auto; }
+  .modal { background: var(--cream); border: 1px solid var(--line); border-radius: 18px;
+           width: 75vw; max-width: none;
+           min-width: min(760px, calc(100vw - 56px));
+           min-height: min(75vh, calc(100vh - 96px)); max-height: calc(100vh - 96px);
+           box-shadow: var(--shadow-lg); padding: 26px 30px;
+           display: flex; flex-direction: column; }
+  @media (max-width: 1000px){
+    .modal { width: 100%; max-width: 600px; min-width: 0; min-height: 0; max-height: calc(100vh - 48px); }
+  }
+
+  .tk-kopf { display: flex; align-items: center; gap: 20px; padding-bottom: 14px; margin-bottom: 14px;
+             border-bottom: 1px solid var(--line); }
+  .tk-titel { flex: 1 1 auto; min-width: 0; border: none; background: none; padding: 0;
+              font-family: inherit; font-size: 22px; font-weight: 400; letter-spacing: -.015em; color: var(--ink); }
+  .tk-titel::placeholder { color: var(--hilfstext); }
+  .tk-titel:focus { outline: none; }
+
+  /* Statuspfad — kompakte Pills, sitzt neben dem Titel */
+  .stage-path { display: flex; gap: 4px; margin: 0; flex: 0 0 auto; }
+  .stage { padding: 6px 12px; margin: 0; border: 1px solid var(--rahmen); border-radius: 20px;
+           font-size: 9.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; text-align: center;
+           background: none; color: var(--muted-hell); cursor: pointer; white-space: nowrap;
+           outline: none; -webkit-appearance: none; appearance: none;
+           transition: color .2s var(--weich), border-color .2s var(--weich), background .2s var(--weich); }
+  .stage:hover { color: var(--ink); border-color: var(--muted); }
+  .stage.aktiv { color: var(--on-accent); background: var(--accent); border-color: var(--accent); }
+  @media (max-width: 1000px){
+    .tk-kopf { flex-direction: column; align-items: stretch; gap: 12px; }
+    .stage-path { flex-wrap: wrap; }
+  }
+
+  .modal-body { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 28px; overflow: hidden; }
+  .mcol { min-width: 0; overflow-y: auto; padding-right: 6px; display: flex; flex-direction: column; }
+  @media (max-width: 1000px){
+    .modal-body { grid-template-columns: 1fr; gap: 0; overflow: visible; }
+    .mcol { overflow: visible; }
+    #mcolMid, #mcolRight { border-top: 1px solid var(--line); padding-top: 16px; margin-top: 16px; }
+  }
+
+  .field { margin-bottom: 20px; }
+  .field label { display: block; font-size: 9px; font-weight: 400; letter-spacing: .14em; text-transform: uppercase;
+                 color: var(--muted-hell); margin-bottom: 7px; }
+  .field input[type=text], .field textarea, .field select {
+    width: 100%; padding: 8px 11px; border: 1px solid var(--rahmen); border-radius: var(--feld-radius);
+    font-family: inherit; font-size: 14.5px; background: none; color: var(--ink); transition: border-color .3s var(--weich); }
+  .field input:hover, .field textarea:hover, .field select:hover { border-color: var(--muted); }
+  .field input:focus, .field textarea:focus, .field select:focus { outline: none; border-color: var(--accent); }
+  .field textarea { resize: vertical; min-height: 120px; line-height: 1.6; }
+
+  /* ===== Rich-Text-Editor (Beschreibung + Updates) ===== */
+  .rte-wrap { border: 1px solid var(--rahmen); border-radius: var(--feld-radius); overflow: hidden;
+              transition: border-color .3s var(--weich); }
+  .rte-wrap:hover { border-color: var(--muted); }
+  .rte-wrap:focus-within { border-color: var(--accent); }
+  /* Toolbar ist im Ruhezustand ausgeblendet und fährt erst bei Fokus auf */
+  .rte-bar { display: flex; gap: 2px; padding: 0 6px; max-height: 0; overflow: hidden; opacity: 0;
+             border-bottom: 1px solid transparent; flex-wrap: wrap;
+             transition: max-height .2s var(--weich), opacity .18s var(--weich), padding .2s var(--weich), border-color .2s var(--weich); }
+  .rte-wrap:focus-within .rte-bar { max-height: 44px; opacity: 1; padding: 5px 6px; border-bottom-color: var(--line); }
+  .rte-bar button { border: none; background: none; color: var(--muted); width: 30px; height: 28px; border-radius: 6px;
+                    font-size: 13px; display: inline-flex; align-items: center; justify-content: center;
+                    transition: background .15s, color .15s; }
+  .rte-bar button:hover { background: var(--chip); color: var(--ink); }
+  .rte-bar button.on { color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+  .rte-bar .sep { width: 1px; align-self: stretch; background: var(--line); margin: 4px 3px; }
+  .rte { min-height: 96px; padding: 10px 12px; font-size: 14px; line-height: 1.65; color: var(--ink);
+         outline: none; overflow-wrap: anywhere; }
+  .rte.sm { min-height: 60px; font-size: 13.5px; }
+  .rte.is-empty:before { content: attr(data-placeholder); color: var(--hilfstext); pointer-events: none; }
+  .rte ul { list-style: disc outside; margin: 4px 0; padding-left: 22px; }
+  .rte ol { list-style: decimal outside; margin: 4px 0; padding-left: 24px; }
+  .rte li { margin: 1px 0; }
+  .rte ul ul { list-style: circle; }
+  .rte ol ol { list-style: lower-roman; }
+  .rte blockquote { margin: 8px 0; padding: 2px 0 2px 14px; border-left: 2px solid var(--accent); color: var(--muted); }
+  .rte div { min-height: 1.2em; }
+  .rte strong { font-weight: 700; }
+
+  /* Gerenderte Markdown-Vorschau (Karten, Updates-Liste) */
+  .md ul { list-style: disc outside; margin: 3px 0; padding-left: 20px; }
+  .md ol { list-style: decimal outside; margin: 3px 0; padding-left: 22px; }
+  .md li { margin: 1px 0; }
+  .md blockquote { margin: 5px 0; padding: 1px 0 1px 11px; border-left: 2px solid var(--accent); color: var(--muted); }
+  .md strong { font-weight: 700; }
+  .md p, .md div { margin: 0; }
+  /* Ziel- und Beschreibungsspalte: das RTE-Feld füllt die Spaltenhöhe */
+  #mcolGoal .field, #mcolDesc .field { flex: 1 1 auto; display: flex; flex-direction: column; }
+  #mcolGoal .rte-wrap, #mcolDesc .rte-wrap { flex: 1 1 auto; display: flex; flex-direction: column; }
+  #mcolGoal .rte, #mcolDesc .rte { flex: 1 1 auto; }
+  /* Ziel = "Vorgabe": dezent getöntes Panel, hebt sich als etwas Gesetztes ab */
+  #mcolGoal .rte-wrap { background: color-mix(in srgb, var(--accent) 5%, transparent);
+                        border-color: color-mix(in srgb, var(--accent) 28%, var(--rahmen)); }
+  .collapse-label { display: flex; align-items: center; gap: 8px; user-select: none; margin-bottom: 8px; }
+  .collapse-label label { margin: 0; }
+  .goal-pin { font-size: 12px; line-height: 1; }
+  .goal-tag { font-size: 8.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+              color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent);
+              border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+              padding: 2px 7px; border-radius: 20px; }
+  .goal-collapse { margin-left: auto; font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+                   color: var(--muted); background: none; border: 1px solid var(--rahmen);
+                   border-radius: var(--feld-radius); padding: 4px 10px; cursor: pointer;
+                   transition: color .2s var(--weich), border-color .2s var(--weich); }
+  .goal-collapse:hover { color: var(--accent); border-color: var(--accent); }
+  /* Eingeklappt: Ziel-Spalte raus, deutlicher Wiederöffner am Rand */
+  .modal-body.goal-zu { grid-template-columns: 0 1fr 1fr; }
+  .modal-body.goal-zu #mcolGoal { display: none; }
+  .goal-reopen { display: none; flex: 0 0 auto; align-self: stretch; align-items: center; gap: 8px;
+                 writing-mode: vertical-rl; padding: 14px 10px; margin-right: 4px; cursor: pointer;
+                 border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--rahmen)); border-radius: var(--feld-radius);
+                 background: color-mix(in srgb, var(--accent) 6%, transparent); color: var(--accent);
+                 font-size: 10px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; user-select: none;
+                 transition: background .2s var(--weich), border-color .2s var(--weich); }
+  .goal-reopen:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); border-color: var(--accent); }
+  .modal-body.goal-zu .goal-reopen { display: flex; }
+
+  /* Multipicklist Owner */
+  .pick-row { display: flex; flex-wrap: wrap; gap: 7px; }
+  .pick-opt { font-size: 10px; font-weight: 400; letter-spacing: .12em; text-transform: uppercase;
+              padding: 6px 11px; border-radius: var(--feld-radius); border: 1px solid var(--rahmen);
+              cursor: pointer; user-select: none; color: var(--muted); background: none;
+              transition: color .3s var(--weich), border-color .3s var(--weich); }
+  .pick-opt:hover { color: var(--ink); border-color: var(--muted); }
+  .pick-opt.sel { color: var(--accent); border-color: var(--accent); }
+
+  /* ===== Kompakte Meta-Zeile mit Dropdown-Feldern ===== */
+  .meta-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px 16px; margin-bottom: 20px; }
+  .meta-grid.meta-top { grid-template-columns: repeat(5, minmax(0,1fr)); gap: 10px 14px; margin-bottom: 18px; }
+  @media (max-width: 1200px){ .meta-grid.meta-top { grid-template-columns: repeat(3, minmax(0,1fr)); } }
+  @media (max-width: 1000px){ .meta-grid.meta-top { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+  .meta-top .mfield > label { font-size: 8.5px; margin-bottom: 4px; }
+  .meta-top .msel-trigger { min-height: 32px; padding: 5px 9px; }
+  .mfield { min-width: 0; }
+  .mfield > label { display: block; font-size: 9px; font-weight: 400; letter-spacing: .14em; text-transform: uppercase;
+                    color: var(--muted-hell); margin-bottom: 3px; }
+  .msel { position: relative; }
+  .msel-trigger { width: 100%; display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 6px 4px;
+                  border: 1px solid transparent; border-bottom: 1px solid var(--line); border-radius: 0; background: none;
+                  cursor: pointer; text-align: left; transition: border-color .2s var(--weich), background .2s var(--weich); }
+  .msel-trigger:hover { border-bottom-color: var(--muted); }
+  .msel.open .msel-trigger { border: 1px solid var(--accent); border-radius: var(--feld-radius); background: var(--cream); }
+  .msel-vals { flex: 1 1 auto; display: flex; flex-wrap: wrap; gap: 5px; min-width: 0; }
+  .msel-ph { color: var(--hilfstext); font-size: 13px; }
+  .msel-caret { flex: 0 0 auto; font-size: 8px; color: var(--muted-hell); }
+  .msel-chip { font-size: 9px; letter-spacing: .06em; text-transform: uppercase; padding: 2px 8px; border-radius: 20px;
+               border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+  .msel-chip.tag { border: 1px solid; }
+  .msel-panel { position: absolute; top: calc(100% + 5px); left: 0; right: 0; z-index: 46; display: none; flex-direction: column;
+                gap: 2px; max-height: 240px; overflow-y: auto; padding: 7px; background: var(--cream);
+                border: 1px solid var(--line); border-radius: var(--feld-radius); box-shadow: var(--shadow-lg); }
+  .msel.open .msel-panel { display: flex; }
+  .msel-opt { display: flex; align-items: center; gap: 10px; padding: 7px 9px; border-radius: 7px; cursor: pointer;
+              font-size: 13px; color: var(--ink); user-select: none; }
+  .msel-opt:hover { background: var(--chip); }
+  .msel-opt .box { width: 14px; height: 14px; flex: 0 0 auto; border: 1.5px solid var(--muted); border-radius: 4px;
+                   display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
+  .msel-opt.round .box { border-radius: 50%; }
+  .msel-opt.sel .box { background: var(--accent); border-color: var(--accent); }
+  .msel-opt.sel .box::after { content: "✓"; color: var(--on-accent); font-size: 10px; }
+  .msel.invalid .msel-trigger { border-color: var(--overdue); }
+  /* Suchfeld innerhalb eines msel-Panels */
+  .msel-search-box { padding: 2px 2px 6px; position: sticky; top: 0; background: var(--cream); }
+  .msel-search { width: 100%; padding: 7px 10px; border: 1px solid var(--rahmen); border-radius: var(--feld-radius);
+                 font-family: inherit; font-size: 13px; color: var(--ink); background: none;
+                 transition: border-color .2s var(--weich); }
+  .msel-search:focus { outline: none; border-color: var(--accent); }
+  .msel-search::placeholder { color: var(--hilfstext); }
+  .msel-opts { display: flex; flex-direction: column; gap: 2px; }
+  .msel-none { font-size: 12px; color: var(--muted); padding: 6px 8px; }
+  .blk-hint { font-size: 9px; letter-spacing: .08em; color: var(--overdue); text-transform: none; }
+  .blk-hint.done { color: var(--muted-hell); }
+
+  /* Subtasks */
+  .sub-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+  .sub-item { display: flex; align-items: center; gap: 7px; border-radius: 7px; transition: background .12s, opacity .12s; }
+  .sub-item.dragging { opacity: .4; }
+  .sub-item.drop-above { box-shadow: inset 0 2px 0 var(--accent); }
+  .sub-item.drop-below { box-shadow: inset 0 -2px 0 var(--accent); }
+  .sub-drag { flex: 0 0 auto; cursor: grab; color: var(--muted-hell); font-size: 13px; line-height: 1; padding: 0 1px;
+              user-select: none; transition: color .15s; }
+  .sub-drag:hover { color: var(--muted); }
+  .sub-drag:active { cursor: grabbing; }
+  .cb { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 15px; height: 15px;
+        border: 1.5px solid var(--muted); border-radius: 4px; cursor: pointer; line-height: 1; user-select: none;
+        transition: background .12s, border-color .12s; }
+  .cb.done { background: var(--accent); border-color: var(--accent); }
+  .cb.done::after { content: "✓"; color: var(--on-accent); font-size: 11px; }
+  .sub-item .sub-txt { flex: 1 1 auto; font-size: 13.5px; cursor: text; overflow-wrap: anywhere; }
+  .sub-item.done .sub-txt { color: var(--muted); text-decoration: line-through; }
+  /* Inline-Bearbeitung eines Subtasks */
+  .sub-item .sub-edit { flex: 1 1 auto; font-family: inherit; font-size: 13.5px; color: var(--ink); background: none;
+                        border: 1px solid var(--accent); border-radius: 6px; padding: 4px 7px; }
+  .sub-item .sub-edit:focus { outline: none; }
+  .sub-item .sub-del { border: none; background: none; color: var(--muted-hell); font-size: 15px; padding: 0 4px; }
+  .sub-item .sub-del:hover { color: var(--overdue); }
+  .sub-own { position: relative; flex: 0 0 auto; }
+  .sub-own-btn { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--rahmen); background: none;
+                 color: var(--muted); border-radius: 20px; padding: 2px 9px; font-size: 9px; letter-spacing: .1em;
+                 text-transform: uppercase; transition: border-color .2s, color .2s; white-space: nowrap; }
+  .sub-own-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .sub-own-btn.empty { color: var(--muted-hell); }
+  .sub-own-panel { position: absolute; top: calc(100% + 5px); right: 0; z-index: 45; display: none; flex-direction: column;
+                   gap: 2px; min-width: 150px; padding: 7px; background: var(--cream); border: 1px solid var(--line);
+                   border-radius: var(--feld-radius); box-shadow: var(--shadow-lg); }
+  .sub-own-panel.open { display: flex; }
+  .sub-own-panel .dd-opt { font-size: 12.5px; padding: 6px 8px; }
+  .inline-add { display: flex; gap: 8px; }
+  .inline-add input { flex: 1 1 auto; padding: 7px 10px; border: 1px solid var(--rahmen); border-radius: var(--feld-radius);
+                      font-family: inherit; font-size: 13px; background: none; color: var(--ink); }
+  .inline-add input:focus { outline: none; border-color: var(--accent); }
+  .inline-add button { border: 1px solid var(--rahmen); background: none; color: var(--muted); padding: 0 12px;
+                       border-radius: var(--feld-radius); }
+  .inline-add button:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Updates */
+  .upd-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px; }
+  .upd { border-left: 1px solid var(--line); padding-left: 12px; position: relative; }
+  .upd-meta { font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted-hell); margin-bottom: 3px;
+              display: flex; align-items: center; gap: 8px; }
+  .upd-meta .upd-edited { font-style: italic; letter-spacing: .04em; }
+  .upd-actions { margin-left: auto; display: flex; gap: 2px; opacity: 0; transition: opacity .15s; }
+  .upd:hover .upd-actions { opacity: 1; }
+  .upd-actions button { border: none; background: none; color: var(--muted-hell); font-size: 11px; letter-spacing: .06em;
+                        text-transform: uppercase; padding: 1px 5px; border-radius: 5px; }
+  .upd-actions button:hover { color: var(--ink); background: var(--chip); }
+  .upd-actions button.del:hover { color: var(--overdue); }
+  .upd-text { font-size: 13.5px; line-height: 1.55; overflow-wrap: anywhere; }
+  /* Update im Bearbeitungsmodus */
+  .upd-edit-wrap { margin-top: 4px; }
+  .upd-edit-actions { display: flex; gap: 6px; margin-top: 6px; }
+  .upd-edit-actions button { border: 1px solid var(--rahmen); background: none; color: var(--muted); padding: 4px 11px;
+                             border-radius: var(--feld-radius); }
+  .upd-edit-actions button.save { color: var(--accent); border-color: var(--accent); }
+  .upd-edit-actions button:hover { border-color: var(--muted); color: var(--ink); }
+  .upd-edit-actions button.save:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .upd-add textarea { width: 100%; padding: 8px 11px; border: 1px solid var(--rahmen); border-radius: var(--feld-radius);
+                      font-family: inherit; font-size: 13.5px; background: none; color: var(--ink); resize: vertical;
+                      min-height: 54px; }
+  .upd-add textarea:focus { outline: none; border-color: var(--accent); }
+  /* Fußzeile der Update-Eingabe: Autor-Auswahl + Absenden */
+  .upd-add-foot { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+  .upd-author { display: flex; align-items: center; gap: 7px; padding: 3px 6px; border-radius: var(--feld-radius);
+                transition: background .2s var(--weich); }
+  .upd-author-lbl { font-size: 11px; color: var(--muted-hell); letter-spacing: .04em; }
+  .upd-author-sel { font-family: inherit; font-size: 13px; color: var(--ink); background: none;
+                    border: 1px solid var(--rahmen); border-radius: var(--feld-radius); padding: 5px 9px; cursor: pointer;
+                    transition: border-color .2s var(--weich); }
+  .upd-author-sel:focus { outline: none; border-color: var(--accent); }
+  .upd-author.missing { background: color-mix(in srgb, var(--overdue) 12%, transparent); }
+  .upd-author.missing .upd-author-sel { border-color: var(--overdue); }
+  .upd-author.missing .upd-author-lbl { color: var(--overdue); }
+  .upd-send { margin-left: auto; border: 1px solid var(--accent); background: none; color: var(--accent);
+              padding: 6px 16px; border-radius: var(--feld-radius); font-family: inherit; font-size: 13px; cursor: pointer;
+              transition: background .2s var(--weich); }
+  .upd-send:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+
+  .sub-head { display: flex; align-items: baseline; justify-content: space-between; }
+  .sub-head h4 { margin: 0 0 12px; font-size: 9px; font-weight: 400; letter-spacing: .14em; text-transform: uppercase;
+                 color: var(--muted-hell); }
+  .sub-count { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .modal-actions { flex: 0 0 auto; display: flex; gap: 8px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); align-items: center; }
+  .val-msg { font-size: 12px; color: var(--overdue); margin-right: auto; opacity: 0; transition: opacity .2s; }
+  .val-msg.show { opacity: 1; }
+  .field.invalid .pick-row, .field.invalid select { outline: 1px solid var(--overdue); outline-offset: 3px; border-radius: var(--feld-radius); }
+  .modal-actions .spacer { flex: 1; }
+  .danger { color: var(--overdue); border: none; background: none; padding: 7px 10px; }
+  .danger:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+  ::-webkit-scrollbar { height: 9px; width: 9px; }
+  ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 20px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted-hell); }
+  .hidden { display: none !important; }
+  /* Hinweis-Toast (z.B. Link kopiert) */
+  .toast { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(12px);
+           background: var(--ink); color: var(--cream); font-size: 13px; padding: 10px 18px; border-radius: 10px;
+           box-shadow: var(--shadow-lg); z-index: 200; opacity: 0; pointer-events: none;
+           transition: opacity .2s var(--weich), transform .2s var(--weich); max-width: 90vw; text-align: center; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="head-row">
+    <div class="brand">Land &amp; <b>Expand</b></div>
+    <div class="head-spacer"></div>
+    <span class="last-upd" id="lastUpd"></span>
+    <span class="data-warn" id="dataWarn" title="">⚠ Datenproblem</span>
+    <div class="sync-wrap" id="syncWrap">
+      <span class="sync ok fade" id="syncBadge"></span>
+      <div class="save-panel" id="savePanel" hidden></div>
+    </div>
+    <button class="btn" id="btnRefresh" title="Neu aus dem Sheet laden">↻</button>
+    <button class="btn" id="btnView" title="Zwischen Board und Aufgabenliste wechseln">☰ Aufgaben</button>
+    <button class="btn" id="btnFocus">Fokus</button>
+    <button class="btn" id="btnTheme">Dunkel</button>
+    <button class="btn primary" id="btnNew">+ Neues Ticket</button>
+  </div>
+</header>
+
+<div class="progress-row" id="progressRow">
+  <!-- Balken 1: Zeitverlauf über alle Phasen -->
+  <div class="prog" id="progTime">
+    <div class="prog-head">
+      <span class="prog-label">Zeitverlauf</span>
+      <span class="prog-val" id="progTimeVal"></span>
+    </div>
+    <div class="prog-track" id="progTimeTrack">
+      <div class="prog-phases" id="progTimePhases"></div>
+      <div class="prog-today" id="progTimeToday"><span class="prog-today-dot"></span></div>
+    </div>
+    <div class="prog-phase-labels" id="progTimeLabels"></div>
+    <div class="prog-ends">
+      <span id="progTimeStart"></span>
+      <span id="progTimeEnd"></span>
+    </div>
+  </div>
+  <!-- Balken 2: Anteil erledigter Tickets -->
+  <div class="prog" id="progDone">
+    <div class="prog-head">
+      <span class="prog-label">Erledigte Tickets</span>
+      <span class="prog-val" id="progDoneVal"></span>
+    </div>
+    <div class="prog-track">
+      <div class="prog-fill" id="progDoneFill"></div>
+    </div>
+    <div class="prog-ends">
+      <span id="progDoneSub"></span>
+    </div>
+  </div>
+</div>
+
+<div class="filter-row">
+  <input class="search" id="search" type="search" placeholder="Suchen: Titel, Beschreibung …">
+  <div class="dd" id="ddOwner">
+    <button class="dd-trigger" id="ddOwnerBtn">Owner <span class="caret">▼</span></button>
+    <div class="dd-panel" id="ddOwnerPanel"></div>
+  </div>
+  <div class="dd" id="ddStatus">
+    <button class="dd-trigger" id="ddStatusBtn">Status <span class="caret">▼</span></button>
+    <div class="dd-panel" id="ddStatusPanel"></div>
+  </div>
+  <div class="dd" id="ddTag">
+    <button class="dd-trigger" id="ddTagBtn">Tags <span class="caret">▼</span></button>
+    <div class="dd-panel" id="ddTagPanel"></div>
+  </div>
+</div>
+
+<div class="board-scroll" id="boardScroll">
+  <div class="board" id="board"></div>
+</div>
+
+<div class="tasks-view" id="tasksView" hidden></div>
+
+<!-- Ticket-Dialog -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="tk-kopf">
+      <input class="tk-titel" id="fTitle" placeholder="Titel des Tickets" autocomplete="off">
+      <div class="stage-path" id="stagePath"></div>
+    </div>
+
+    <div class="meta-grid meta-top">
+      <div class="mfield" id="fldPhase">
+        <label>Phase</label>
+        <div class="msel" id="mselPhase">
+          <button type="button" class="msel-trigger"><span class="msel-vals"></span><span class="msel-caret">▼</span></button>
+          <div class="msel-panel"></div>
+        </div>
+      </div>
+      <div class="mfield" id="fldOwners">
+        <label>Owner</label>
+        <div class="msel" id="mselOwners">
+          <button type="button" class="msel-trigger"><span class="msel-vals"></span><span class="msel-caret">▼</span></button>
+          <div class="msel-panel"></div>
+        </div>
+      </div>
+      <div class="mfield">
+        <label>Stakeholder</label>
+        <div class="msel" id="mselStakeholder">
+          <button type="button" class="msel-trigger"><span class="msel-vals"></span><span class="msel-caret">▼</span></button>
+          <div class="msel-panel"></div>
+        </div>
+      </div>
+      <div class="mfield">
+        <label>Tags</label>
+        <div class="msel" id="mselTags">
+          <button type="button" class="msel-trigger"><span class="msel-vals"></span><span class="msel-caret">▼</span></button>
+          <div class="msel-panel"></div>
+        </div>
+      </div>
+      <div class="mfield" id="fldBlockedBy">
+        <label>Blocked by <span class="blk-hint" id="blkHint"></span></label>
+        <div class="msel" id="mselBlockedBy">
+          <button type="button" class="msel-trigger"><span class="msel-vals"></span><span class="msel-caret">▼</span></button>
+          <div class="msel-panel"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-body">
+      <div class="goal-reopen" id="goalReopen" title="Ziel einblenden">📌 Ziel / Aufgabe ›</div>
+      <div class="mcol" id="mcolGoal">
+        <div class="field goal-field">
+          <div class="collapse-label" id="goalHead">
+            <span class="goal-pin">📌</span>
+            <label>Ziel / Aufgabe</label>
+            <span class="goal-tag">Vorgabe</span>
+            <button type="button" class="goal-collapse" id="goalToggle" title="Ziel-Spalte einklappen">Einklappen ›</button>
+          </div>
+          <div class="rte-wrap" data-rte="goal">
+            <div class="rte-bar"></div>
+            <div class="rte" id="fGoal" contenteditable="true" data-placeholder=""></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mcol" id="mcolDesc">
+        <div class="field">
+          <label>Beschreibung</label>
+          <div class="rte-wrap" data-rte="desc">
+            <div class="rte-bar"></div>
+            <div class="rte" id="fDesc" contenteditable="true" data-placeholder=""></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mcol" id="mcolRight">
+        <div class="field" style="margin-bottom:24px;">
+          <div class="sub-head">
+            <h4>Subtasks</h4>
+            <span class="sub-count" id="subCount"></span>
+          </div>
+          <div class="sub-list" id="subList"></div>
+          <div class="inline-add">
+            <input id="subInput" placeholder="Subtask hinzufügen …" autocomplete="off">
+            <button id="subAdd">+</button>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label>Updates</label>
+          <div class="upd-list" id="updList"></div>
+          <div class="upd-add">
+            <div class="rte-wrap" data-rte="upd">
+              <div class="rte-bar"></div>
+              <div class="rte sm" id="updInput" contenteditable="true" data-placeholder=""></div>
+            </div>
+            <div class="upd-add-foot">
+              <div class="upd-author" id="updAuthorWrap">
+                <span class="upd-author-lbl">Von:</span>
+                <select id="updAuthor" class="upd-author-sel"></select>
+              </div>
+              <button type="button" id="updSend" class="upd-send">Absenden</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="danger" id="btnDelete">Löschen</button>
+      <button class="btn" id="btnCopyLink" title="Link zu diesem Ticket kopieren">🔗 Link kopieren</button>
+      <span class="val-msg" id="valMsg"></span>
+      <button class="btn" id="btnCancel">Schließen</button>
+      <button class="btn primary" id="btnSave">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   MOCK-BACKEND — Platzhalter statt GSheet/Apps-Script.
+   Alle Lese-/Schreibzugriffe laufen über das Objekt `Backend`.
+   Später wird hier fetch() gegen die Web-App-URL gesetzt; die UI bleibt gleich.
+   ===================================================================== */
+/* =====================================================================
+   BACKEND — Google Sheet über Apps Script Web-App.
+   Protokoll identisch zum bewährten "Mein Board":
+     Lesen : GET ?tabs=Phases,Owners,Tickets,Subtasks,Updates -> { Tab:[rows] }
+     Schreiben (POST text/plain, kein Preflight):
+       {action:"append", tab, row}
+       {action:"update", tab, idField, idValue, row}
+       {action:"delete", tab, idField, idValue}
+       {action:"batch",  ops:[…]}
+
+   Sheet-Struktur (Header exakt):
+     Phases   : id | name | start | end
+     Owners   : name
+     Tickets  : id | title | description | phaseId | status | owners
+     Subtasks : subtask_id | ticket_id | title | done | pos | owners
+     Updates  : update_id | ticket_id | author | ts | text
+   ===================================================================== */
+const WEBAPP_URL   = "https://script.google.com/macros/s/AKfycbzOt_fkBu57jCebn3wy5wndRHYAH_1z5eQBAqtxUuTaWlG8tSBRkBBfJ8E_fBOE6WoGmA/exec";   // <-- Web-App-URL aus Apps Script hier eintragen
+const WEBAPP_TOKEN = "";   // optional, muss zu TOKEN im Script passen
+
+const TAB_PHASES = "Phases", TAB_OWNERS = "Owners", TAB_TICKETS = "Tickets",
+      TAB_SUBTASKS = "Subtasks", TAB_UPDATES = "Updates", TAB_TAGS = "Tags";
+
+function backendConfigured(){ return !!WEBAPP_URL; }
+function uid(p){ return (p||"") + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+/* ---- Roh-Kommunikation (nach Source-Vorbild) ---- */
+async function apiCall(params, opt){
+  opt = opt || {};
+  if(!backendConfigured()) throw new Error("WEBAPP_URL ist nicht gesetzt.");
+  const p = Object.assign({}, params);
+  if(WEBAPP_TOKEN) p.token = WEBAPP_TOKEN;
+  const isWrite = p.action === "append" || p.action === "update" || p.action === "delete" || p.action === "batch";
+
+  const usp = new URLSearchParams();
+  Object.keys(p).forEach(k => { const v = p[k]; if(v==null) return; usp.set(k, (typeof v === "object") ? JSON.stringify(v) : String(v)); });
+  const url = WEBAPP_URL + (WEBAPP_URL.includes("?") ? "&" : "?") + usp.toString();
+  // Schreiben IMMER per POST (text/plain -> kein CORS-Preflight, keine Längengrenze).
+  // Nur Lesen läuft per GET. GET an doGet kann nicht schreiben -> sonst Sync-Fehler.
+  const usePost = isWrite;
+
+  // Für den POST eine SCHLANKE URL bauen: nur die kleinen Kennungen (action/token),
+  // NICHT die großen Objekte (ops/row). So bleibt die URL kurz, aber das Backend
+  // erkennt selbst dann noch die Schreib-Aktion, wenn Google den POST-Body bei einer
+  // Weiterleitung verwirft. Die eigentlichen Daten stehen im Body (JSON).
+  const uspPost = new URLSearchParams();
+  if(p.action) uspPost.set("action", p.action);
+  if(p.token)  uspPost.set("token", p.token);
+  const postUrl = WEBAPP_URL + (WEBAPP_URL.includes("?") ? "&" : "?") + uspPost.toString();
+
+  // Wiederholbarkeit bei transienten Fehlern (kurzer 500, Timeout, Body-Verlust
+  // bei Weiterleitung). Lesen sowie update/delete sind ohnehin idempotent.
+  // batch wird ebenfalls wiederholt: das Apps-Script (v3) macht append idempotent
+  // (append prüft die ID und wird bei Bedarf zum update), daher entstehen keine
+  // Duplikate, wenn ein Bündel ein zweites Mal ankommt.
+  const wiederholbar = !p.action || p.action === "update" || p.action === "delete" || p.action === "batch";
+  const maxVersuche = opt.einmal ? 1 : (wiederholbar ? 3 : 1);
+  let lastErr = null;
+  for(let versuch = 0; versuch < maxVersuche; versuch++){
+    if(versuch) await new Promise(r => setTimeout(r, versuch * 700));
+    try {
+      const zeitlimit = p.action ? 90000 : 45000;
+      const ctl = (typeof AbortController !== "undefined") ? new AbortController() : null;
+      const frist = ctl ? setTimeout(() => ctl.abort(), zeitlimit) : null;
+      let res;
+      try {
+        // Beim POST eine schlanke URL mit action/token verwenden (siehe oben): Falls Google
+        // den POST bei einer Weiterleitung in einen parameterlosen GET umwandelt, erkennt
+        // das Backend über ?action=… trotzdem, dass es sich um einen Schreib-Aufruf handelt,
+        // und liefert eine klare Meldung statt "Kein tab/tabs Parameter".
+        res = usePost
+          ? await fetch(postUrl, { method:"POST", redirect:"follow", signal: ctl && ctl.signal, headers:{ "Content-Type":"text/plain;charset=utf-8" }, body: JSON.stringify(p) })
+          : await fetch(url, { method:"GET", redirect:"follow", signal: ctl && ctl.signal });
+      } finally { if(frist) clearTimeout(frist); }
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); }
+      catch(_){ throw new Error("Unerwartete Antwort (HTTP " + res.status + "). Web-App-Freigabe prüfen."); }
+      if(data && data.error){
+        // Fehler mit Marker "[RETRY]" sind transient (z.B. Body-Verlust bei einer
+        // Weiterleitung) -> erneut versuchen. Alle anderen Backend-Fehler sind endgültig.
+        const roh = String(data.error);
+        const transient = roh.indexOf("[RETRY]") === 0;
+        const err = new Error(roh.replace(/^\[RETRY\]\s*/, ""));
+        if(!transient) err.endgueltig = true;
+        throw err;
+      }
+      return data;
+    } catch(e){
+      if(e && (e.name === "AbortError" || /aborted/i.test(e.message||""))) e = new Error("Zeitüberschreitung — Google hat nicht geantwortet.");
+      lastErr = e; if(e && e.endgueltig) break;
+    }
+  }
+  throw lastErr;
+}
+const sheetReadTab    = tab => apiCall({ tab });
+// Erst Sammel-Aufruf versuchen; scheitert er (fehlender Tab lässt manche Skripte
+// crashen), einzeln nachladen. Robuster als ein einziger ?tabs=-Aufruf.
+async function sheetReadTabs(names){
+  try {
+    const d = await apiCall({ tabs: names.join(",") });
+    const passt = d && typeof d === "object" && !Array.isArray(d) && names.every(n => Object.prototype.hasOwnProperty.call(d, n));
+    if(passt) return d;
+  } catch(_){ /* Fallback unten */ }
+  const out = {};
+  for(const n of names){
+    try { out[n] = await sheetReadTab(n); }
+    catch(e){ out[n] = { error: (e && e.message) || String(e) }; }
+  }
+  return out;
+}
+const sheetAppendRow  = (tab, row) => apiCall({ action:"append", tab, row });
+const sheetUpdateRow  = (tab, idField, idValue, row) => apiCall({ action:"update", tab, idField, idValue, row });
+const sheetDeleteRows = (tab, idField, idValue) => apiCall({ action:"delete", tab, idField, idValue });
+async function sheetBatch(ops){
+  const d = await apiCall({ action:"batch", ops });
+  if(!d || !Array.isArray(d.results)) throw new Error("Unerwartete Antwort auf das Bündel.");
+  return d.results;
+}
+const opAppend = (tab, row)                   => ({ action:"append", tab, row });
+const opUpdate = (tab, idField, idValue, row) => ({ action:"update", tab, idField, idValue, row });
+const opDelete = (tab, idField, idValue)      => ({ action:"delete", tab, idField, idValue });
+
+/* ---- Zeilen-Mapping (Frontend-Modell <-> Sheet-Zeile) ---- */
+const bool = b => b ? "TRUE" : "FALSE";
+const parseBool = v => String(v).toUpperCase() === "TRUE";
+const joinOwners  = a => (a||[]).join(", ");
+const splitOwners = s => String(s||"").split(",").map(x=>x.trim()).filter(Boolean);
+
+function ticketToRow(t){
+  return { id:t.id, title:t.title||"", goal:t.goal||"", description:t.desc||"", phaseId:t.phaseId||"", status:t.status||DEFAULT_STATUS, owners:joinOwners(t.owners), tags:joinOwners(t.tags), stakeholder:t.stakeholder||"", blocked_by:t.blockedBy||"", created:t.created||"", updated:t.updated||"" };
+}
+function subToRow(s, ticketId){
+  return { subtask_id:s.id, ticket_id:ticketId, title:s.text||"", done:bool(s.done), pos:(s.pos!=null?s.pos:0), owners:joinOwners(s.owners) };
+}
+function updToRow(u, ticketId){
+  return { update_id:u.id, ticket_id:ticketId, author:u.author||"", ts:u.ts||"", text:u.text||"" };
+}
+
+/* ---- Schreib-Warteschlange (optimistisch, ein Auftrag nach dem anderen) ---- */
+const queue = [];
+let queueRunning = false, queueSeq = 0;
+
+// Verlauf erfolgreich gespeicherter Aufträge (neueste zuerst), für das Speichern-Panel.
+const saveHistory = [];
+const SAVE_HISTORY_MAX = 40;
+function pushHistory(job){
+  saveHistory.unshift({
+    label: job.label || "Gespeichert",
+    ops: (job.ops || []).length,
+    ts: Date.now()
+  });
+  if(saveHistory.length > SAVE_HISTORY_MAX) saveHistory.length = SAVE_HISTORY_MAX;
+}
+
+function enqueue(label, ops){
+  queue.push({ id:++queueSeq, label, ops, state:"wartet" });
+  saveCache();   // lokalen Stand sofort sichern (State ist bereits aktualisiert)
+  renderSync();
+  clearTimeout(enqueue._t);
+  enqueue._t = setTimeout(runQueue, 60);
+}
+function batchGruppe(){
+  const gruppe = []; let zeichen = 0;
+  for(const j of queue){
+    if(j.state === "fehler" || !j.ops || !j.ops.length) break;
+    const laenge = JSON.stringify(j.ops).length;
+    if(gruppe.length && (zeichen + laenge > 60000 || gruppe.length >= 25)) break;
+    zeichen += laenge; gruppe.push(j);
+  }
+  return gruppe;
+}
+async function runQueue(){
+  if(queueRunning) return;
+  queueRunning = true;
+  try {
+    while(queue.length){
+      const job = queue[0];
+      if(job.state === "fehler") break;
+
+      const gruppe = batchGruppe();
+      const vorgaenge = gruppe.reduce((n,j)=> n + j.ops.length, 0);
+      if(vorgaenge >= 1){
+        gruppe.forEach(j=> j.state = "laeuft"); renderSync();
+        // Vorgänge desselben Auftrags markieren, damit ein Fehler die Folgeschritte überspringt
+        const alleOps = gruppe.flatMap(j => j.ops.length > 1 ? j.ops.map(o => Object.assign({ grp:"j"+j.id }, o)) : j.ops);
+        let results;
+        try { results = await sheetBatch(alleOps); }
+        catch(e){
+          gruppe[0].state = "fehler"; gruppe[0].err = (e && e.message) || String(e);
+          renderSync(); break;
+        }
+        // Ergebnisse zuordnen; Erledigtes verlässt die Queue sofort
+        let i = 0, gesamt = gruppe.reduce((n,j)=> n + j.ops.length, 0);
+        if(results.length !== gesamt){
+          gruppe[0].state = "fehler"; gruppe[0].err = "Bündel kam unvollständig zurück. Bitte aktualisieren.";
+          renderSync(); break;
+        }
+        for(const j of gruppe){
+          const meine = results.slice(i, i + j.ops.length); i += j.ops.length;
+          const schlecht = meine.find(r => r && (r.error || r.skipped));
+          if(!schlecht){ j.done = true; pushHistory(j); }
+          else { j.state = "fehler"; j.err = schlecht.error || "Zusammengehöriger Schritt fehlgeschlagen."; break; }
+        }
+        for(let k = queue.length - 1; k >= 0; k--) if(queue[k].done) queue.splice(k, 1);
+        renderSync();
+        continue;
+      }
+    }
+  } finally { queueRunning = false; renderSync(); }
+}
+
+/* ---- Speicher-Panel (Verlauf) ---- */
+function relZeit(ms){
+  const d = Date.now() - ms, s = Math.floor(d/1000), m = Math.floor(s/60), h = Math.floor(m/60), t = Math.floor(h/24);
+  if(s < 5) return "gerade eben";
+  if(s < 60) return `vor ${s} Sek`;
+  if(m < 60) return `vor ${m} Min`;
+  if(h < 24) return `vor ${h} Std`;
+  return `vor ${t} Tag${t>1?"en":""}`;
+}
+function renderSavePanel(){
+  const el = $("#savePanel"); if(!el) return;
+  const offen = queue.filter(j=> j.state !== "fehler" && !j.done);
+  const fehler = queue.find(j=> j.state === "fehler");
+  let html = `<div class="sp-head">Speicher-Verlauf</div>`;
+
+  if(fehler){
+    html += `<div class="sp-error"><b>Nicht gespeichert:</b><br>${esc(fehler.err || "Unbekannter Fehler")}
+      <div class="sp-error-job">${esc(fehler.label || "")}</div></div>`;
+  }
+  if(offen.length){
+    html += `<div class="sp-pending">↻ ${offen.length} wird gespeichert …</div>`;
+  }
+
+  if(!saveHistory.length && !offen.length && !fehler){
+    html += `<div class="sp-empty">Noch nichts gespeichert in dieser Sitzung.</div>`;
+  } else if(saveHistory.length){
+    html += `<div class="sp-list">` + saveHistory.map(h => `
+      <div class="sp-item">
+        <span class="sp-check">✓</span>
+        <div class="sp-main">
+          <div class="sp-label">${esc(h.label)}</div>
+          <div class="sp-meta">${relZeit(h.ts)}${h.ops>1?` · ${h.ops} Änderungen`:""}</div>
+        </div>
+      </div>`).join("") + `</div>`;
+  }
+  el.innerHTML = html;
+}
+function toggleSavePanel(){
+  const el = $("#savePanel"); if(!el) return;
+  if(el.hidden){ renderSavePanel(); el.hidden = false; }
+  else el.hidden = true;
+}
+function closeSavePanel(){ const el = $("#savePanel"); if(el) el.hidden = true; }
+
+/* ---- Sync-Anzeige ---- */
+function renderSync(){
+  const el = $("#syncBadge"); if(!el) return;
+  const offen = queue.filter(j=> j.state !== "fehler").length;
+  const fehler = queue.find(j=> j.state === "fehler");
+  if(fehler){ el.className = "sync err"; el.textContent = "⚠ Sync-Fehler"; el.title = "klicken für Details"; el._err = fehler.err || "Unbekannter Fehler"; }
+  else if(offen){ el.className = "sync busy"; el.textContent = "↻ Speichert …"; el.title = "klicken für Verlauf"; el._err = null; }
+  else { el.className = "sync ok"; el.textContent = "✓ Gespeichert"; el.title = "klicken für Verlauf"; el._err = null; setTimeout(()=>{ if(!queue.length && $("#savePanel")?.hidden) el.className = "sync ok fade"; }, 1500); }
+  // Panel live nachziehen, wenn offen
+  if($("#savePanel") && !$("#savePanel").hidden) renderSavePanel();
+}
+
+/* ---- Datenwarnung (doppelte IDs im Sheet o.Ä.) ---- */
+function renderDataWarnung(){
+  const el = $("#dataWarn"); if(!el) return;
+  if(dataWarnung){ el.classList.add("show"); el.title = dataWarnung + "\n\n(klicken für Details)"; }
+  else { el.classList.remove("show"); el.title = ""; }
+}
+
+/* ---- Fortschrittsbalken oben ---- */
+// Formatiert "YYYY-MM-DD" als "DD.MM.YY"
+function fmtDatum(iso){
+  const m = String(iso||"").match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[3]}.${m[2]}.${m[1].slice(2)}` : "";
+}
+function renderProgress(){
+  // --- Balken 1: Zeitverlauf von frühestem Phasenstart bis spätestem Phasenende ---
+  const mitDatum = phases.filter(p => p.start && p.end);
+  const startMs = mitDatum.length ? Math.min(...mitDatum.map(p => tsToMs(p.start))) : 0;
+  const endMs   = mitDatum.length ? Math.max(...mitDatum.map(p => tsToMs(p.end)))   : 0;
+  const spanne  = endMs - startMs;
+  const heute   = Date.now();
+
+  const phasesEl = $("#progTimePhases");
+  const todayEl  = $("#progTimeToday");
+  const labelsEl = $("#progTimeLabels");
+  if(phasesEl && todayEl){
+    if(spanne > 0){
+      // Phasenabschnitte proportional zur Dauer, chronologisch sortiert
+      const sortiert = [...mitDatum].sort((a,b)=> tsToMs(a.start) - tsToMs(b.start));
+      // Welche Phase läuft gerade?
+      const aktiveId = (sortiert.find(p => heute >= tsToMs(p.start) && heute <= tsToMs(p.end)) || {}).id;
+      // Zwei dezente, abwechselnde Farbtöne aus der Akzentfarbe — ruhig statt bunt
+      phasesEl.innerHTML = sortiert.map((p, idx) => {
+        const left = (tsToMs(p.start) - startMs) / spanne * 100;
+        const w = (tsToMs(p.end) - tsToMs(p.start)) / spanne * 100;
+        const aktiv = p.id === aktiveId;
+        const bg = aktiv
+          ? "color-mix(in srgb, var(--accent) 32%, transparent)"
+          : (idx % 2 === 0 ? "color-mix(in srgb, var(--accent) 15%, transparent)"
+                           : "color-mix(in srgb, var(--accent) 8%, transparent)");
+        return `<div class="prog-phase-seg" style="left:${left}%;width:${w}%;background:${bg};" title="${esc(p.name)}: ${fmtDatum(p.start)} – ${fmtDatum(p.end)}"></div>`;
+      }).join("");
+
+      // Namenslabels: mittig unter jedem Abschnitt positioniert
+      if(labelsEl){
+        labelsEl.innerHTML = sortiert.map(p => {
+          const mitteMs = (tsToMs(p.start) + tsToMs(p.end)) / 2;
+          const pos = Math.max(0, Math.min(100, (mitteMs - startMs) / spanne * 100));
+          const aktiv = p.id === aktiveId;
+          const wPct = (tsToMs(p.end) - tsToMs(p.start)) / spanne * 100;
+          // maximale Labelbreite an Abschnittsbreite koppeln, damit nichts überlappt
+          return `<span class="prog-phase-lbl${aktiv?" active":""}" style="left:${pos}%;max-width:${Math.max(wPct,10)}%;" title="${esc(p.name)}">${esc(p.name)}</span>`;
+        }).join("");
+      }
+
+      // Heute-Marker positionieren (auf 0–100 % begrenzt)
+      const pos = Math.max(0, Math.min(100, (heute - startMs) / spanne * 100));
+      todayEl.style.left = pos + "%";
+      todayEl.style.display = (heute < startMs || heute > endMs) ? "none" : "";
+    } else {
+      phasesEl.innerHTML = ""; todayEl.style.display = "none";
+      if(labelsEl) labelsEl.innerHTML = "";
+    }
+  }
+  const startLbl = $("#progTimeStart"), endLbl = $("#progTimeEnd"), timeVal = $("#progTimeVal");
+  if(startLbl) startLbl.textContent = startMs ? fmtDatum(new Date(startMs).toISOString()) : "—";
+  if(endLbl)   endLbl.textContent   = endMs   ? fmtDatum(new Date(endMs).toISOString())   : "—";
+  if(timeVal){
+    if(spanne > 0 && heute >= startMs && heute <= endMs){
+      const verstrichen = Math.round((heute - startMs) / spanne * 100);
+      const tageRest = Math.ceil((endMs - heute) / 86400000);
+      timeVal.textContent = `${verstrichen}% · noch ${tageRest} Tag${tageRest!==1?"e":""}`;
+    } else if(spanne > 0 && heute > endMs){
+      timeVal.textContent = "abgeschlossen";
+    } else if(spanne > 0){
+      timeVal.textContent = "noch nicht gestartet";
+    } else {
+      timeVal.textContent = "keine Phasen-Daten";
+    }
+  }
+
+  // --- Balken 2: Anteil erledigter Tickets (Done) an allen Tickets ---
+  const gesamt = tickets.length;
+  const erledigt = tickets.filter(t => t.status === "Done").length;
+  const anteil = gesamt ? Math.round(erledigt / gesamt * 100) : 0;
+  const fill = $("#progDoneFill"), doneVal = $("#progDoneVal"), doneSub = $("#progDoneSub");
+  if(fill) fill.style.width = anteil + "%";
+  if(doneVal) doneVal.textContent = gesamt ? `${anteil}%` : "—";
+  if(doneSub) doneSub.textContent = gesamt ? `${erledigt} von ${gesamt} erledigt` : "Noch keine Tickets";
+}
+
+/* ---- Laden ---- */
+async function loadFromSheet(){
+  const raw = await sheetReadTabs([TAB_PHASES, TAB_OWNERS, TAB_TICKETS, TAB_SUBTASKS, TAB_UPDATES, TAB_TAGS]);
+  for(const t of [TAB_PHASES, TAB_TICKETS]){
+    if(!raw[t] || raw[t].error) throw new Error("Tab '" + t + "' fehlt oder ist leer: " + ((raw[t]&&raw[t].error) || "keine Daten"));
+  }
+  // Optionale Tabs (Owners, Subtasks, Updates, Tags): fehlend = leer behandeln
+  const rows = t => (raw[t] && !raw[t].error && Array.isArray(raw[t])) ? raw[t] : [];
+
+  // Phasen laden und gegen doppelte IDs absichern. Zwei Phasen mit derselben id
+  // führen sonst dazu, dass ein Ticket (Zuordnung über phaseId===ph.id) in BEIDEN
+  // Spalten auftaucht. Wir behalten die erste und sammeln die Konflikte für einen Hinweis.
+  const phasenRoh = rows(TAB_PHASES).map(r => ({ id:String(r.id), name:r.name||"", start:String(r.start||""), end:String(r.end||""), desc:String(r.description||"").trim() }))
+                                    .filter(p => p.id);
+  const phasenSeen = new Map();     // id -> erster Name
+  const phasenDup = [];             // {id, name} der ignorierten Duplikate
+  phases = [];
+  phasenRoh.forEach(p => {
+    if(phasenSeen.has(p.id)){ phasenDup.push(p); return; }   // Duplikat: überspringen
+    phasenSeen.set(p.id, p.name); phases.push(p);
+  });
+  phases.sort((a,b)=> (a.start||"").localeCompare(b.start||""));
+
+  owners = rows(TAB_OWNERS).map(r => r.name).filter(Boolean);
+  tags = rows(TAB_TAGS).map(r => ({ name:String(r.name||"").trim(), color:String(r.color||"").trim() })).filter(t => t.name);
+
+  // Subtasks & Updates nach ticket_id gruppieren
+  const bySub = {}, byUpd = {};
+  rows(TAB_SUBTASKS).forEach(r => {
+    if(!r.subtask_id || !r.ticket_id) return;
+    (bySub[r.ticket_id] ||= []).push({ id:String(r.subtask_id), text:r.title||"", done:parseBool(r.done), pos:Number(r.pos)||0, owners:splitOwners(r.owners) });
+  });
+  Object.values(bySub).forEach(a => a.sort((x,y)=> x.pos - y.pos));
+  rows(TAB_UPDATES).forEach(r => {
+    if(!r.update_id || !r.ticket_id) return;
+    (byUpd[r.ticket_id] ||= []).push({ id:String(r.update_id), author:r.author||"", ts:String(r.ts||""), text:r.text||"", edited:false });
+  });
+  Object.values(byUpd).forEach(a => a.sort((x,y)=> (x.ts||"").localeCompare(y.ts||"")));
+
+  // Tickets laden und gegen doppelte IDs absichern (z.B. falls ein früherer
+  // Sync-Fehler dieselbe Zeile zweimal angelegt hat). Erste ID gewinnt.
+  const ticketSeen = new Set();
+  const ticketDup = [];
+  tickets = [];
+  rows(TAB_TICKETS).filter(r => r.id).forEach(r => {
+    const id = String(r.id);
+    if(ticketSeen.has(id)){ ticketDup.push({ id, title:r.title||"" }); return; }
+    ticketSeen.add(id);
+    tickets.push({
+      id, title:r.title||"", goal:r.goal||"", desc:r.description||"", phaseId:String(r.phaseId||""),
+      status: STATUS_MIGRATION[String(r.status||"").trim()] || DEFAULT_STATUS, owners:splitOwners(r.owners), tags:splitOwners(r.tags), stakeholder:String(r.stakeholder||"").trim(),
+      blockedBy:String(r.blocked_by||"").trim(),
+      created:String(r.created||"").trim(), updated:String(r.updated||"").trim(),
+      subtasks:bySub[id]||[], updates:byUpd[id]||[]
+    });
+  });
+
+  // Hinweis auf Datenprobleme zusammenstellen (wird in der Sync-Anzeige gezeigt)
+  const warnungen = [];
+  if(phasenDup.length){
+    warnungen.push("Doppelte Phasen-ID im Tab 'Phases': " +
+      phasenDup.map(p => `"${p.name}" (id ${p.id})`).join(", ") +
+      ". Jede Phase braucht eine eindeutige id — sonst erscheinen Tickets in mehreren Spalten.");
+  }
+  if(ticketDup.length){
+    warnungen.push("Doppelte Ticket-ID im Tab 'Tickets': " +
+      ticketDup.map(t => `"${t.title}" (id ${t.id})`).join(", ") +
+      ". Die zusätzliche Zeile wird ignoriert; bitte im Sheet entfernen.");
+  }
+  dataWarnung = warnungen.length ? warnungen.join("\n\n") : null;
+
+  saveCache();  // frischen Stand lokal sichern
+  lastFetch = Date.now();
+  renderLastUpd();
+  renderDataWarnung();
+}
+
+/* ---- Lokaler Cache (localStorage): letzter Stand sofort verfügbar ---- */
+const CACHE_KEY = "landexpand-cache-v1";
+function cacheScope(){ return WEBAPP_URL || "demo"; }  // pro Web-App getrennt
+function saveCache(){
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ scope:cacheScope(), ts:Date.now(), phases, owners, tags, tickets }));
+  } catch(_){}
+}
+function loadCache(){
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if(!raw) return false;
+    const c = JSON.parse(raw);
+    if(!c || c.scope !== cacheScope() || !Array.isArray(c.tickets)) return false;
+    phases = c.phases||[]; owners = c.owners||[]; tags = c.tags||[]; tickets = c.tickets||[];
+    return true;
+  } catch(_){ return false; }
+}
+function cacheAge(){
+  try { const c = JSON.parse(localStorage.getItem(CACHE_KEY)||"{}"); return c.ts ? Date.now()-c.ts : null; } catch(_){ return null; }
+}
+
+/* ---- Speichern: Ticket-Diff (Kernzeile + Subtasks + Updates) ---- */
+// Vergleicht das bearbeitete Ticket mit dem alten Stand und erzeugt minimale Sheet-Ops.
+function diffTicketOps(neu, alt){
+  const ops = [];
+  const isNew = !alt;
+  // Kernzeile
+  const kern = ticketToRow(neu);
+  ops.push(isNew ? opAppend(TAB_TICKETS, kern) : opUpdate(TAB_TICKETS, "id", neu.id, kern));
+
+  // Subtasks
+  const altSub = new Map((alt?.subtasks||[]).map(s => [s.id, s]));
+  (neu.subtasks||[]).forEach((s, i) => {
+    s.pos = (i + 1) * 10;
+    const row = subToRow(s, neu.id);
+    const a = altSub.get(s.id);
+    if(!a) ops.push(opAppend(TAB_SUBTASKS, row));
+    else if(a.text!==s.text || a.done!==s.done || a.pos!==s.pos || joinOwners(a.owners)!==joinOwners(s.owners)) ops.push(opUpdate(TAB_SUBTASKS, "subtask_id", s.id, row));
+    altSub.delete(s.id);
+  });
+  altSub.forEach((_, id) => ops.push(opDelete(TAB_SUBTASKS, "subtask_id", id)));  // gelöschte
+
+  // Updates: hinzufügen, ändern (Text) und löschen
+  const altUpd = new Map((alt?.updates||[]).map(u => [u.id, u]));
+  (neu.updates||[]).forEach(u => {
+    const a = altUpd.get(u.id);
+    if(!a) ops.push(opAppend(TAB_UPDATES, updToRow(u, neu.id)));
+    else if((a.text||"") !== (u.text||"")) ops.push(opUpdate(TAB_UPDATES, "update_id", u.id, updToRow(u, neu.id)));
+    altUpd.delete(u.id);
+  });
+  altUpd.forEach((_, id) => ops.push(opDelete(TAB_UPDATES, "update_id", id)));  // gelöschte
+
+  return ops;
+}
+
+/* ---- Öffentliche Aktionen (vom UI genutzt) ---- */
+// Merkt sich den geladenen Stand je Ticket, um beim Speichern zu diffen.
+function snapshot(id){ const t = tickets.find(x=>x.id===id); return t ? JSON.parse(JSON.stringify(t)) : null; }
+
+// Zeitstempel im selben Format wie Updates: "YYYY-MM-DD HH:MM"
+function jetztTs(){
+  // Lokale Zeit als "YYYY-MM-DD HH:MM" (nicht UTC, sonst Zeitzonen-Versatz beim Zurückrechnen)
+  const d = new Date();
+  const p = n => String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function saveTicket(neu, altSnapshot){
+  const isNew = !neu.id;
+  if(isNew) neu.id = uid("T");
+  // Zeitstempel pflegen: created einmalig beim Anlegen, updated bei jeder Änderung
+  const ts = jetztTs();
+  if(isNew && !neu.created) neu.created = ts;
+  neu.updated = ts;
+  // lokalen State aktualisieren (optimistisch)
+  const i = tickets.findIndex(x => x.id === neu.id);
+  if(i >= 0) tickets[i] = neu; else tickets.push(neu);
+  if(backendConfigured()) enqueue((isNew?"Ticket anlegen: ":"Ticket speichern: ") + (neu.title||""), diffTicketOps(neu, altSnapshot));
+  return neu;
+}
+function deleteTicket(id){
+  const t = tickets.find(x => x.id === id);
+  tickets = tickets.filter(x => x.id !== id);
+  if(backendConfigured()) enqueue("Ticket löschen: " + ((t&&t.title)||""), [
+    opDelete(TAB_TICKETS, "id", id),
+    opDelete(TAB_SUBTASKS, "ticket_id", id),
+    opDelete(TAB_UPDATES, "ticket_id", id),
+  ]);
+}
+function changeStatus(id, status){
+  const t = tickets.find(x => x.id === id); if(!t) return;
+  t.status = status;
+  t.updated = jetztTs();
+  if(backendConfigured()) enqueue("Status: " + (t.title||""), [ opUpdate(TAB_TICKETS, "id", id, ticketToRow(t)) ]);
+}
+
+
+/* ===================== STATE ===================== */
+const STATUSES = ["Backlog","Next","Ongoing","Done"];
+const STATUS_LABEL = { Backlog:"Backlog", Next:"Als Nächstes", Ongoing:"In Arbeit", Done:"Erledigt" };
+const DEFAULT_STATUS = "Backlog";
+// Alte Status auf neue abbilden (für bestehende Sheet-Daten, bis manuell umgestellt)
+const STATUS_MIGRATION = { Open:"Backlog", Blocked:"Ongoing", Backlog:"Backlog", Next:"Next", "Als Nächstes":"Next", Ongoing:"Ongoing", Done:"Done", "In Arbeit":"Ongoing", "Erledigt":"Done" };
+let phases = [], owners = [], tickets = [], tags = [];
+let ownerFilter = new Set();
+let statusFilter = new Set();
+let tagFilter = new Set();
+let searchQuery = "";
+let collapsed = new Set(); // "phaseId|status"
+let focusMode = false;
+let editing = null;
+let editSnapshot = null; // Stand des Tickets beim Öffnen (fürs Diffen beim Speichern)
+let dataWarnung = null;  // Hinweistext bei Sheet-Problemen (doppelte IDs o.Ä.)
+let viewMode = "board";  // "board" | "tasks"
+let taskOwner = null;    // in der Aufgabenliste gewählter Owner (null = alle)
+
+const $ = s => document.querySelector(s);
+
+// Demo-Daten, solange keine WEBAPP_URL gesetzt ist (Layout testbar)
+function loadDemo(){
+  // Zeitstempel relativ zu heute (Tage-Offset) im Format YYYY-MM-DD HH:MM
+  const demoTs = (tageOffset)=>{ const d=new Date(Date.now()+tageOffset*86400000); return d.toISOString().slice(0,16).replace("T"," "); };
+  phases = [
+    { id:"P1", name:"Land",     start:"2026-01-01", end:"2026-03-31", desc:"Erste Referenzkunden gewinnen und den Markt validieren." },
+    { id:"P2", name:"Proof",    start:"2026-04-01", end:"2026-06-30", desc:"Belastbaren ROI-Nachweis aus den Piloten erarbeiten." },
+    { id:"P3", name:"Pull",     start:"2026-07-01", end:"2026-09-30", desc:"Nachfrage skalieren und den Vertrieb systematisieren." },
+    { id:"P4", name:"Platform", start:"2026-10-01", end:"2026-12-31", desc:"Auf eine wiederholbare Plattform-Auslieferung umstellen." },
+  ];
+  owners = ["Tom","Jasper","Benjamin","Margarita"];
+  tags = [
+    { name:"Vertrieb", color:"#0865bc" },
+    { name:"Technik",  color:"#18C7A8" },
+    { name:"Recht",    color:"#d64828" },
+    { name:"Wichtig",  color:"#E0A100" },
+  ];
+  tickets = [
+    { id:"T1", phaseId:"P1", title:"Erste Referenzkunden identifizieren", goal:"5 qualifizierte Referenzkunden für die Land-Phase gewinnen.", desc:"Longlist der Care-Betreiber nach Region & Größe.", status:"Ongoing", owners:["Tom","Margarita"], tags:["Vertrieb","Wichtig"], stakeholder:"Jasper",
+      created: demoTs(-1), updated: demoTs(-1),
+      subtasks:[{id:"s1",text:"PLZ-Cluster ziehen",done:true,pos:10,owners:["Tom"]},{id:"s2",text:"Größenklassen bilden",done:false,pos:20,owners:[]}],
+      updates:[{id:"u1",author:"Tom",ts:"2026-01-08 09:12",text:"Erste 40 Betreiber im Sheet."}] },
+    { id:"T2", phaseId:"P1", title:"Pilot-Vertrag Vorlage", goal:"Standardvertrag, den Vertrieb ohne Legal-Rückfrage nutzen kann.", desc:"Rechtlich freigegebene Vorlage für Land-Phase.", status:"Next", owners:["Benjamin"], tags:["Recht"], blockedBy:"T3", created: demoTs(-40), updated: demoTs(-2), subtasks:[], updates:[] },
+    { id:"T3", phaseId:"P1", title:"CRM-Objekt anlegen", goal:"Land-Deals sauber im CRM abbildbar machen.", desc:"Salesforce Custom Object für Land-Deals.", status:"Done", owners:["Tom"], tags:["Technik"], created: demoTs(-50), updated: demoTs(-30), subtasks:[], updates:[] },
+    { id:"T4", phaseId:"P2", title:"ROI-Nachweis erstellen", goal:"Belastbaren ROI-Case für die Expand-Entscheidung liefern.", desc:"Belastbare Zahlen aus Pilot.", status:"Backlog", owners:["Tom","Jasper"], tags:[], blockedBy:"T2", created: demoTs(-40), updated: demoTs(-40),
+      subtasks:[{id:"s4a",text:"Kostendaten sammeln",done:false,pos:10,owners:["Jasper"]},{id:"s4b",text:"Nutzenmodell rechnen",done:false,pos:20,owners:["Tom"]}], updates:[] },
+  ];
+}
+async function load(){
+  if(!backendConfigured()){ loadDemo(); return; }
+  await loadFromSheet();
+}
+
+/* aktive Phase = heute innerhalb start/end */
+function activePhaseId(){
+  const t = new Date().toISOString().slice(0,10);
+  const p = phases.find(p => t >= p.start && t <= p.end);
+  return p ? p.id : null;
+}
+function fmtDate(d){
+  if(!d) return "";
+  const [y,m,dd] = d.split("-");
+  return `${dd}.${m}.${y.slice(2)}`;
+}
+
+/* ===================== DROPDOWN-FILTER ===================== */
+function renderDropdowns(){
+  // Owner
+  const op = $("#ddOwnerPanel"); op.innerHTML = "";
+  owners.forEach(o => {
+    const r = document.createElement("div");
+    r.className = "dd-opt" + (ownerFilter.has(o)?" sel":"");
+    r.innerHTML = `<span class="box"></span>${esc(o)}`;
+    r.onclick = () => { ownerFilter.has(o)?ownerFilter.delete(o):ownerFilter.add(o); syncDropdowns(); renderCurrentView(); };
+    op.appendChild(r);
+  });
+  if(owners.length){ const c=document.createElement("button"); c.className="dd-clear"; c.textContent="Alle";
+    c.onclick=()=>{ ownerFilter.clear(); syncDropdowns(); renderCurrentView(); }; op.appendChild(c); }
+  // Status
+  const sp = $("#ddStatusPanel"); sp.innerHTML = "";
+  STATUSES.forEach(st => {
+    const r = document.createElement("div");
+    r.className = "dd-opt" + (statusFilter.has(st)?" sel":"");
+    r.innerHTML = `<span class="box"></span>${STATUS_LABEL[st]}`;
+    r.onclick = () => { statusFilter.has(st)?statusFilter.delete(st):statusFilter.add(st); syncDropdowns(); renderCurrentView(); };
+    sp.appendChild(r);
+  });
+  const c2=document.createElement("button"); c2.className="dd-clear"; c2.textContent="Alle";
+  c2.onclick=()=>{ statusFilter.clear(); syncDropdowns(); renderCurrentView(); }; sp.appendChild(c2);
+  // Tags
+  const tp = $("#ddTagPanel"); tp.innerHTML = "";
+  if(!tags.length){ tp.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:6px 8px;">Keine Tags</div>`; }
+  tags.forEach(tag => {
+    const r = document.createElement("div");
+    r.className = "dd-opt" + (tagFilter.has(tag.name)?" sel":"");
+    r.innerHTML = `<span class="box" style="border-color:${tag.color||"var(--muted)"};"></span>${esc(tag.name)}`;
+    r.onclick = () => { tagFilter.has(tag.name)?tagFilter.delete(tag.name):tagFilter.add(tag.name); syncDropdowns(); renderCurrentView(); };
+    tp.appendChild(r);
+  });
+  if(tags.length){ const c3=document.createElement("button"); c3.className="dd-clear"; c3.textContent="Alle";
+    c3.onclick=()=>{ tagFilter.clear(); syncDropdowns(); renderCurrentView(); }; tp.appendChild(c3); }
+  syncDropdowns();
+}
+function syncDropdowns(){
+  const ob = $("#ddOwnerBtn"), sb = $("#ddStatusBtn"), tb = $("#ddTagBtn");
+  ob.className = "dd-trigger" + (ownerFilter.size?" has":"");
+  ob.innerHTML = `Owner${ownerFilter.size?` <span class="cnt">${ownerFilter.size}</span>`:""} <span class="caret">▼</span>`;
+  sb.className = "dd-trigger" + (statusFilter.size?" has":"");
+  sb.innerHTML = `Status${statusFilter.size?` <span class="cnt">${statusFilter.size}</span>`:""} <span class="caret">▼</span>`;
+  tb.className = "dd-trigger" + (tagFilter.size?" has":"");
+  tb.innerHTML = `Tags${tagFilter.size?` <span class="cnt">${tagFilter.size}</span>`:""} <span class="caret">▼</span>`;
+  [...$("#ddOwnerPanel").children].forEach(r=>{ if(r.classList.contains("dd-opt")) r.classList.toggle("sel", ownerFilter.has(r.textContent)); });
+  [...$("#ddStatusPanel").children].forEach(r=>{ if(r.classList.contains("dd-opt")) r.classList.toggle("sel", statusFilter.has(r.textContent)); });
+  [...$("#ddTagPanel").children].forEach(r=>{ if(r.classList.contains("dd-opt")) r.classList.toggle("sel", tagFilter.has(r.textContent)); });
+}
+function toggleDD(which){
+  const o=$("#ddOwnerPanel"), s=$("#ddStatusPanel"), t=$("#ddTagPanel");
+  o.classList.remove("open"); s.classList.remove("open"); t.classList.remove("open");
+  if(which==="owner") o.classList.toggle("open");
+  else if(which==="status") s.classList.toggle("open");
+  else t.classList.toggle("open");
+}
+$("#ddOwnerBtn").onclick = e => { e.stopPropagation(); toggleDD("owner"); };
+$("#ddStatusBtn").onclick = e => { e.stopPropagation(); toggleDD("status"); };
+$("#ddTagBtn").onclick = e => { e.stopPropagation(); toggleDD("tag"); };
+document.addEventListener("click", () => { $("#ddOwnerPanel").classList.remove("open"); $("#ddStatusPanel").classList.remove("open"); $("#ddTagPanel").classList.remove("open"); closeAllSubPanels(); closeAllMsel(); });
+$("#ddOwnerPanel").addEventListener("click", e=>e.stopPropagation());
+$("#ddStatusPanel").addEventListener("click", e=>e.stopPropagation());
+$("#ddTagPanel").addEventListener("click", e=>e.stopPropagation());
+
+$("#search").addEventListener("input", e => { searchQuery = e.target.value.trim().toLowerCase(); renderCurrentView(); });
+
+function passesFilter(t){
+  if(ownerFilter.size && !t.owners.some(o=>ownerFilter.has(o))) return false;
+  if(statusFilter.size && !statusFilter.has(t.status)) return false;
+  if(tagFilter.size && !(t.tags||[]).some(tg=>tagFilter.has(tg))) return false;
+  if(searchQuery){
+    const hay = (t.title+" "+t.desc).toLowerCase();
+    if(!hay.includes(searchQuery)) return false;
+  }
+  return true;
+}
+
+/* ===================== BOARD ===================== */
+function phaseVisibleInFocus(ph, actId){
+  const today = new Date().toISOString().slice(0,10);
+  if(ph.start > today) return false;          // Phase startet erst in der Zukunft → im Fokus irrelevant
+  if(ph.id===actId) return true;              // aktive Phase immer zeigen
+  // Vergangene/laufende Phase mit offenen oder blockierten Tickets (respektiert aktive Filter)
+  return tickets.some(t => t.phaseId===ph.id && t.status!=="Done" && passesFilter(t));
+}
+
+/* ===================== ANSICHT: BOARD / AUFGABEN ===================== */
+function setView(mode){
+  viewMode = mode;
+  const boardScroll = $("#boardScroll"), tasksView = $("#tasksView"), btn = $("#btnView"), btnFocus = $("#btnFocus");
+  const isTasks = mode === "tasks";
+  boardScroll.hidden = isTasks;
+  tasksView.hidden = !isTasks;
+  btn.textContent = isTasks ? "▦ Board" : "☰ Aufgaben";
+  btn.classList.toggle("active", isTasks);
+  if(btnFocus) btnFocus.style.display = isTasks ? "none" : "";   // Fokus-Button nur im Board sinnvoll
+  if(isTasks) renderTasks(); else renderBoard();
+}
+
+// Phase-Name für ein Ticket (für die Kontextzeile in der Aufgabenliste)
+function phaseName(id){ const p = phases.find(x=>x.id===id); return p ? p.name : ""; }
+
+// Baut die Aufgaben-Datenstruktur: pro Owner alle offenen Tickets + offenen Subtasks.
+// "Offen" = Ticket-Status Open oder Blocked (nicht Done); Subtask nicht erledigt.
+function sammleAufgaben(){
+  const proOwner = new Map();   // owner -> { tickets:[], subtasks:[] }
+  const ensure = o => { if(!proOwner.has(o)) proOwner.set(o, { tickets:[], subtasks:[] }); return proOwner.get(o); };
+
+  tickets.forEach(t => {
+    if(t.status === "Done") return;               // erledigte Tickets ausblenden
+    if(!passesFilter(t)) return;                  // aktive Board-Filter/Suche respektieren
+    // Ticket selbst als Aufgabe je Owner
+    (t.owners.length ? t.owners : ["(ohne Owner)"]).forEach(o => ensure(o).tickets.push(t));
+    // offene Subtasks je Subtask-Owner (fällt zurück auf Ticket-Owner, wenn keiner gesetzt)
+    t.subtasks.forEach(s => {
+      if(s.done) return;
+      const subOwners = (s.owners && s.owners.length) ? s.owners : (t.owners.length ? t.owners : ["(ohne Owner)"]);
+      subOwners.forEach(o => ensure(o).subtasks.push({ sub:s, ticket:t }));
+    });
+  });
+  return proOwner;
+}
+
+function renderTasks(){
+  const root = $("#tasksView"); root.innerHTML = "";
+  const proOwner = sammleAufgaben();
+
+  // Owner-Reihenfolge: bekannte Owner zuerst (Sheet-Reihenfolge), dann evtl. "(ohne Owner)"
+  const alleOwner = [...owners];
+  if(proOwner.has("(ohne Owner)")) alleOwner.push("(ohne Owner)");
+  const sichtbar = taskOwner ? alleOwner.filter(o => o === taskOwner) : alleOwner;
+
+  // Owner-Chips zum Filtern
+  const chips = document.createElement("div");
+  chips.className = "task-chips";
+  const alle = document.createElement("button");
+  alle.className = "task-chip" + (taskOwner===null ? " sel" : "");
+  alle.textContent = "Alle";
+  alle.onclick = () => { taskOwner = null; renderTasks(); };
+  chips.appendChild(alle);
+  alleOwner.forEach(o => {
+    const d = proOwner.get(o);
+    const anz = d ? (d.tickets.length + d.subtasks.length) : 0;
+    const b = document.createElement("button");
+    b.className = "task-chip" + (taskOwner===o ? " sel" : "");
+    b.innerHTML = `${esc(o)} <span class="tc-num">${anz}</span>`;
+    b.onclick = () => { taskOwner = (taskOwner===o ? null : o); renderTasks(); };
+    chips.appendChild(b);
+  });
+  root.appendChild(chips);
+
+  // Gesamt-Leerzustand
+  const gesamt = sichtbar.reduce((n,o)=>{ const d=proOwner.get(o); return n + (d ? d.tickets.length + d.subtasks.length : 0); }, 0);
+  if(gesamt === 0){
+    const leer = document.createElement("div");
+    leer.className = "task-empty";
+    leer.textContent = "Keine offenen Aufgaben. 🎉";
+    root.appendChild(leer);
+    return;
+  }
+
+  // Pro Owner eine Gruppe
+  sichtbar.forEach(o => {
+    const d = proOwner.get(o);
+    if(!d || (d.tickets.length===0 && d.subtasks.length===0)) return;
+
+    const grp = document.createElement("div");
+    grp.className = "task-group";
+    grp.innerHTML = `<div class="task-group-head"><span class="tg-name">${esc(o)}</span>
+      <span class="tg-count">${d.tickets.length + d.subtasks.length} offen</span></div>`;
+
+    const list = document.createElement("div");
+    list.className = "task-list";
+
+    // Tickets zuerst, dann Subtasks
+    d.tickets.forEach(t => list.appendChild(taskRowTicket(t)));
+    d.subtasks.forEach(({sub, ticket}) => list.appendChild(taskRowSubtask(sub, ticket)));
+
+    grp.appendChild(list);
+    root.appendChild(grp);
+  });
+}
+
+// Zeile für ein ganzes Ticket
+function taskRowTicket(t){
+  const blocker = t.blockedBy ? tickets.find(x => x.id === t.blockedBy) : null;
+  const istBlockiert = blocker && blocker.status !== "Done";
+  const row = document.createElement("div");
+  row.className = "task-row ticket" + (istBlockiert ? " blocked" : "");
+  const subOpen = t.subtasks.filter(s=>!s.done).length;
+  const meta = [];
+  meta.push(phaseName(t.phaseId));
+  meta.push(STATUS_LABEL[t.status] || t.status);
+  if(subOpen) meta.push(`${subOpen} offene Subtask${subOpen>1?"s":""}`);
+  if(istBlockiert) meta.push("blockiert");
+  const badge = frischeBadge(t);
+  row.innerHTML = `
+    <span class="task-dot ${istBlockiert?"blk":"open"}"></span>
+    <div class="task-main">
+      <div class="task-title">${esc(t.title)}${badge}</div>
+      <div class="task-sub">${meta.filter(Boolean).map(esc).join(" · ")}</div>
+    </div>
+    <span class="task-kind">Ticket</span>`;
+  row.onclick = () => openTicket(t.id);
+  return row;
+}
+
+// Zeile für einen einzelnen offenen Subtask
+function taskRowSubtask(s, t){
+  const row = document.createElement("div");
+  row.className = "task-row subtask";
+  row.innerHTML = `
+    <span class="task-check" title="Als erledigt markieren">○</span>
+    <div class="task-main">
+      <div class="task-title">${esc(s.text)}</div>
+      <div class="task-sub">${esc(phaseName(t.phaseId))} · aus „${esc(t.title)}"</div>
+    </div>
+    <span class="task-kind sub">Subtask</span>`;
+  // Klick auf den Kreis: Subtask direkt abhaken (ohne Dialog)
+  row.querySelector(".task-check").addEventListener("click", e => {
+    e.stopPropagation();
+    toggleSubtaskDone(t.id, s.id);
+  });
+  // Klick auf die Zeile: zugehöriges Ticket öffnen
+  row.onclick = () => openTicket(t.id);
+  return row;
+}
+
+// Subtask abhaken und speichern (aus der Aufgabenliste heraus)
+function toggleSubtaskDone(ticketId, subId){
+  const t = tickets.find(x=>x.id===ticketId); if(!t) return;
+  const s = t.subtasks.find(x=>x.id===subId); if(!s) return;
+  const snap = snapshot(ticketId);
+  s.done = !s.done;
+  t.updated = jetztTs();
+  if(backendConfigured()) enqueue("Subtask erledigt: " + (s.text||""), diffTicketOps(t, snap));
+  renderTasks();
+}
+
+function renderBoard(){
+  const board = $("#board"); board.innerHTML = "";
+  const actId = activePhaseId();
+  let visible = phases;
+  if(focusMode) visible = phases.filter(ph => phaseVisibleInFocus(ph, actId));
+  if(focusMode && visible.length===0){
+    board.innerHTML = `<div style="color:var(--muted);font-size:14px;padding:8px 2px;">Keine Phase mit offenen oder blockierten Tickets. 🎉</div>`;
+    return;
+  }
+
+  visible.forEach((ph, idx) => {
+    const col = document.createElement("div");
+    col.className = "phase" + (ph.id===actId ? " aktiv" : "");
+
+    const head = document.createElement("div");
+    head.className = "phase-head" + (ph.desc ? " has-desc" : "");
+    const nowMarker = (ph.id===actId) ? `<span class="phase-now">Aktuell</span>` : "";
+    const caret = ph.desc ? `<span class="phase-caret">▾</span>` : "";
+    head.innerHTML = `<div class="phase-name">${esc(ph.name)}${caret}${nowMarker}</div>
+      <div class="phase-dates">${fmtDate(ph.start)} – ${fmtDate(ph.end)}</div>
+      ${ph.desc ? `<div class="phase-desc">${mdToHtml(ph.desc)}</div>` : ""}`;
+    col.appendChild(head);
+
+    const body = document.createElement("div");
+    body.className = "phase-body";
+    STATUSES.forEach(st => body.appendChild(renderLane(ph, st)));
+    col.appendChild(body);
+    board.appendChild(col);
+
+    // Richtungspfeil zwischen den Phasen (nicht nach der letzten)
+    if(idx < visible.length - 1){
+      const arrow = document.createElement("div");
+      arrow.className = "phase-arrow";
+      arrow.innerHTML = `<span>→</span>`;
+      arrow.setAttribute("aria-hidden", "true");
+      board.appendChild(arrow);
+    }
+  });
+}
+
+function renderLane(ph, status){
+  const items = tickets.filter(t => t.phaseId===ph.id && t.status===status && passesFilter(t));
+  const key = ph.id+"|"+status;
+  const isCol = collapsed.has(key);
+  const lane = document.createElement("div");
+  lane.className = "lane lane-" + status.toLowerCase() + (isCol?" collapsed":"");
+
+  const label = document.createElement("div");
+  label.className = "lane-label";
+  label.innerHTML = `<span class="arw">▼</span>${STATUS_LABEL[status]} <span class="cnt">${items.length}</span>`;
+  label.onclick = () => { isCol ? collapsed.delete(key) : collapsed.add(key); renderBoard(); };
+  lane.appendChild(label);
+
+  const drop = document.createElement("div");
+  drop.className = "lane-drop";
+  drop.dataset.phase = ph.id; drop.dataset.status = status;
+
+  drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("dragover"); });
+  drop.addEventListener("dragleave", () => drop.classList.remove("dragover"));
+  drop.addEventListener("drop", e => {
+    e.preventDefault(); drop.classList.remove("dragover");
+    const id = e.dataTransfer.getData("text/plain");
+    const t = tickets.find(x=>x.id===id);
+    if(t){
+      t.status = status; t.phaseId = ph.id;
+      t.updated = jetztTs();
+      if(backendConfigured()) enqueue("Verschoben: " + (t.title||""), [ opUpdate(TAB_TICKETS, "id", id, ticketToRow(t)) ]);
+      renderBoard();
+    }
+  });
+
+  if(items.length===0){
+    const e = document.createElement("div"); e.className="lane-empty"; e.textContent="—"; drop.appendChild(e);
+  } else items.forEach(t => drop.appendChild(renderCard(t)));
+
+  lane.appendChild(drop);
+  return lane;
+}
+
+// Wandelt "YYYY-MM-DD HH:MM" oder "YYYY-MM-DD" in einen Zeitstempel (ms) um.
+function tsToMs(s){
+  if(!s) return 0;
+  let t = String(s).trim();
+  // "2026-08-27 7:36" -> Stunde/Minute auf zwei Stellen bringen, Leerzeichen -> T
+  const m = t.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{1,2}):(\d{2})/);
+  if(m){ t = `${m[1]}T${String(m[2]).padStart(2,"0")}:${m[3]}`; }
+  else { t = t.replace(" ", "T"); }
+  const d = new Date(t);
+  return isNaN(d.getTime()) ? 0 : d.getTime();
+}
+// Menschenlesbarer Abstand, z.B. "vor 2 Std", "vor 3 Tagen".
+function zeitHer(ms){
+  if(!ms) return "";
+  const diff = Date.now() - ms;
+  const min = Math.floor(diff/60000), std = Math.floor(min/60), tag = Math.floor(std/24);
+  if(min < 1) return "gerade eben";
+  if(min < 60) return `vor ${min} Min`;
+  if(std < 24) return `vor ${std} Std`;
+  if(tag < 30) return `vor ${tag} Tag${tag>1?"en":""}`;
+  const mon = Math.floor(tag/30);
+  return `vor ${mon} Monat${mon>1?"en":""}`;
+}
+const FRISCH_TAGE = 3;   // Fenster für "Neu"/"Aktualisiert"
+function frischeBadge(t){
+  const cMs = tsToMs(t.created), uMs = tsToMs(t.updated);
+  const juengste = Math.max(cMs||0, uMs||0);
+  if(!juengste) return "";
+  const grenze = Date.now() - 8*3600000;   // letzte 8 Stunden
+  if(juengste < grenze) return "";
+  const istNeu = cMs && cMs >= grenze && (!uMs || Math.abs(uMs - cMs) < 60000); // erstellt ≈ geändert -> neu
+  const titel = istNeu ? `Erstellt ${zeitHer(cMs)}` : `Aktualisiert ${zeitHer(juengste)}`;
+  return `<span class="fresh-dot" title="${titel}"></span>`;
+}
+function renderCard(t){
+  const c = document.createElement("div");
+  // Blockiert-Zustand: durch Status ODER durch ein offenes "Blocked by"-Ticket
+  const blocker = t.blockedBy ? tickets.find(x => x.id === t.blockedBy) : null;
+  const activeBlock = blocker && blocker.status !== "Done";
+  c.className = "card" + (activeBlock?" blocked":"") + (t.status==="Done"?" done":"");
+  c.draggable = true;
+  c.addEventListener("dragstart", e => { e.dataTransfer.setData("text/plain", t.id); e.dataTransfer.effectAllowed="move"; });
+  c.onclick = () => openTicket(t.id);
+
+  const subDone = t.subtasks.filter(s=>s.done).length;
+  const meta = [];
+  if(t.subtasks.length) meta.push(`<span class="ic" title="Subtasks erledigt">☑ ${subDone}/${t.subtasks.length}</span>`);
+  if(t.updates.length)  meta.push(`<span class="ic" title="Updates">💬 ${t.updates.length}</span>`);
+
+  // Tags nur als farbige Punkte (Name im Tooltip)
+  const tagsHtml = (t.tags && t.tags.length)
+    ? `<div class="tag-dots">${t.tags.map(nm=>{ const tg=tagByName(nm); return `<span class="tag-dot" style="background:${tg.color||'var(--muted-hell)'};" title="${esc(nm)}"></span>`; }).join("")}</div>`
+    : "";
+
+  // Owner als Initialen-Kreise
+  const ownersHtml = (t.owners && t.owners.length)
+    ? `<div class="avatars">${t.owners.map(o=>`<span class="avatar" title="${esc(o)}">${esc(initialen(o))}</span>`).join("")}</div>`
+    : "";
+
+  // Blockiert-Indikator: nur ein kleines Icon (Details im Dialog), anklickbar
+  const blockHtml = (blocker && activeBlock)
+    ? `<span class="blk-dot" data-block="${esc(blocker.id)}" title="Blockiert von: ${esc(blocker.title||blocker.id)}">⛔</span>`
+    : "";
+
+  c.innerHTML = `
+    <div class="card-top">
+      <div class="card-title">${frischeBadge(t)}${esc(t.title)}</div>
+      ${tagsHtml}
+    </div>
+    ${t.goal ? `<div class="card-goal">${mdPreview(t.goal)}</div>` : ""}
+    <div class="card-foot">
+      ${ownersHtml}
+      <div class="foot-right">
+        ${blockHtml}
+        ${meta.length?`<span class="card-meta">${meta.join(" ")}</span>`:""}
+      </div>
+    </div>`;
+
+  // Klick auf den Blockier-Punkt öffnet das blockierende Ticket
+  const blk = c.querySelector(".blk-dot");
+  if(blk){
+    blk.addEventListener("click", e => {
+      e.stopPropagation();
+      const bid = blk.dataset.block;
+      if(tickets.some(x => x.id === bid)) openTicket(bid);
+    });
+  }
+  return c;
+}
+// Initialen aus einem Namen (max. 2 Buchstaben)
+function initialen(name){
+  const teile = String(name||"").trim().split(/\s+/);
+  if(teile.length >= 2) return (teile[0][0]+teile[teile.length-1][0]).toUpperCase();
+  return String(name||"").trim().slice(0,2).toUpperCase();
+}
+
+/* ===================== TICKET-DIALOG ===================== */
+function blankTicket(){
+  return { id:null, phaseId: phases[0]?.id||"", title:"", goal:"", desc:"", status:DEFAULT_STATUS, owners:[], tags:[], stakeholder:"", blockedBy:"", created:"", updated:"", subtasks:[], updates:[] };
+}
+function openTicket(id){
+  editSnapshot = id ? snapshot(id) : null;
+  editing = id ? JSON.parse(JSON.stringify(tickets.find(t=>t.id===id))) : blankTicket();
+  fillDialog();
+  $("#overlay").classList.add("open");
+  $("#fTitle").focus();
+  // URL-Hash setzen, damit die Adresse teilbar ist (nur bei gespeicherten Tickets)
+  if(id) setHashTicket(id);
+}
+function fillDialog(){
+  $("#valMsg")?.classList.remove("show");
+  $("#mselPhase")?.classList.remove("invalid");
+  $("#mselOwners")?.classList.remove("invalid");
+  $("#fTitle").value = editing.title;
+  // RTE-Felder NUR beim Öffnen setzen — nicht bei jeder Auswahl, sonst würde
+  // getippter, noch nicht gespeicherter Text überschrieben.
+  rteSet($("#fGoal"), editing.goal);
+  rteSet($("#fDesc"), editing.desc);
+  // Ziel-Spalte nur bei BESTEHENDEN Tickets ohne Ziel einklappen.
+  // Bei einem neuen Ticket bleibt sie offen, damit man das Ziel gleich eingeben kann.
+  const istNeu = !editing.id;
+  setGoalCollapsed(!istNeu && (!editing.goal || !editing.goal.trim()));
+  if(!Array.isArray(editing.tags)) editing.tags = [];
+
+  renderMetaFields();
+  renderStagePath();
+  renderSubtasks();
+  renderUpdates();
+  renderUpdAuthor();
+  $("#btnDelete").classList.toggle("hidden", !editing.id);
+  $("#btnCopyLink").classList.toggle("hidden", !editing.id);
+}
+
+// Nur die Dropdown-Felder neu zeichnen (bei Auswahl-Änderungen) — RTE bleibt unangetastet
+function renderMetaFields(){
+  if(!Array.isArray(editing.tags)) editing.tags = [];
+  renderMsel({
+    id:"mselPhase", multi:false, placeholder:"Phase wählen …",
+    options: phases.map(p => ({ value:p.id, label:p.name })),
+    selected: () => editing.phaseId ? [editing.phaseId] : [],
+    toggle: v => { editing.phaseId = (editing.phaseId===v ? "" : v); renderMetaFields(); },
+  });
+  renderMsel({
+    id:"mselOwners", multi:true, placeholder:"Owner wählen …",
+    options: owners.map(o => ({ value:o, label:o })),
+    selected: () => editing.owners,
+    toggle: v => { const i=editing.owners.indexOf(v); i>=0?editing.owners.splice(i,1):editing.owners.push(v); renderMetaFields(); },
+  });
+  renderMsel({
+    id:"mselStakeholder", multi:false, placeholder:"Stakeholder wählen …",
+    options: owners.map(o => ({ value:o, label:o })),
+    selected: () => editing.stakeholder ? [editing.stakeholder] : [],
+    toggle: v => { editing.stakeholder = (editing.stakeholder===v ? "" : v); renderMetaFields(); },
+  });
+  renderMsel({
+    id:"mselTags", multi:true, placeholder: tags.length ? "Tags wählen …" : "Keine Tags im Sheet",
+    options: tags.map(t => ({ value:t.name, label:t.name, color:t.color })),
+    selected: () => editing.tags,
+    toggle: v => { const i=editing.tags.indexOf(v); i>=0?editing.tags.splice(i,1):editing.tags.push(v); renderMetaFields(); },
+  });
+  // Blocked by: alle anderen Tickets als Optionen (sich selbst ausschließen)
+  const blockOptions = tickets
+    .filter(t => t.id && t.id !== editing.id)
+    .map(t => ({ value:t.id, label:t.title || t.id }));
+  renderMsel({
+    id:"mselBlockedBy", multi:false, searchable:true, searchPlaceholder:"Ticket suchen …",
+    placeholder: blockOptions.length ? "Blockierendes Ticket wählen …" : "Keine anderen Tickets",
+    options: blockOptions,
+    selected: () => editing.blockedBy ? [editing.blockedBy] : [],
+    toggle: v => { editing.blockedBy = (editing.blockedBy===v ? "" : v); renderMetaFields(); },
+  });
+  // Hinweis, falls das blockierende Ticket bereits erledigt ist
+  const hint = $("#blkHint");
+  if(hint){
+    const blocker = editing.blockedBy ? tickets.find(t => t.id === editing.blockedBy) : null;
+    if(blocker && blocker.status === "Done"){ hint.textContent = "· erledigt ✓"; hint.className = "blk-hint done"; }
+    else if(blocker){ hint.textContent = "· " + STATUS_LABEL[blocker.status]; hint.className = "blk-hint"; }
+    else { hint.textContent = ""; hint.className = "blk-hint"; }
+  }
+}
+
+/* Generischer Auswahl-Dropdown (Single/Multi) für die Meta-Zeile */
+function renderMsel(cfg){
+  const root = document.getElementById(cfg.id); if(!root) return;
+  const trigger = root.querySelector(".msel-trigger");
+  const vals = root.querySelector(".msel-vals");
+  const panel = root.querySelector(".msel-panel");
+  const sel = cfg.selected();
+
+  // Chips im Trigger
+  vals.innerHTML = "";
+  if(!sel.length){ vals.innerHTML = `<span class="msel-ph">${esc(cfg.placeholder)}</span>`; }
+  else sel.forEach(v => {
+    const opt = cfg.options.find(o => o.value === v);
+    const chip = document.createElement("span");
+    if(opt && opt.color){ chip.className = "msel-chip tag"; chip.setAttribute("style", tagChipStyle(opt.color)); }
+    else chip.className = "msel-chip";
+    chip.textContent = opt ? opt.label : v;
+    vals.appendChild(chip);
+  });
+
+  // Optionen im Panel (bei searchable mit vorangestelltem Suchfeld)
+  panel.innerHTML = "";
+  let searchInput = null, optWrap = panel;
+  if(cfg.searchable){
+    const box = document.createElement("div"); box.className = "msel-search-box";
+    searchInput = document.createElement("input");
+    searchInput.className = "msel-search"; searchInput.type = "search";
+    searchInput.placeholder = cfg.searchPlaceholder || "Suchen …"; searchInput.autocomplete = "off";
+    box.appendChild(searchInput); panel.appendChild(box);
+    optWrap = document.createElement("div"); optWrap.className = "msel-opts"; panel.appendChild(optWrap);
+  }
+
+  function drawOptions(filter){
+    optWrap.innerHTML = "";
+    const q = (filter||"").trim().toLowerCase();
+    if(!cfg.options.length){ optWrap.innerHTML = `<div class="msel-none">Keine Einträge</div>`; return; }
+    const list = q ? cfg.options.filter(o => o.label.toLowerCase().includes(q)) : cfg.options;
+    if(!list.length){ optWrap.innerHTML = `<div class="msel-none">Nichts gefunden</div>`; return; }
+    list.forEach(o => {
+      const row = document.createElement("div");
+      row.className = "msel-opt" + (cfg.multi?"":" round") + (sel.includes(o.value)?" sel":"");
+      const boxStyle = (o.color && sel.includes(o.value)) ? ` style="background:${o.color};border-color:${o.color};"` : "";
+      row.innerHTML = `<span class="box"${boxStyle}></span>${esc(o.label)}`;
+      row.onclick = e => { e.stopPropagation(); cfg.toggle(o.value); if(!cfg.multi) closeAllMsel(); };
+      optWrap.appendChild(row);
+    });
+  }
+  drawOptions("");
+
+  if(searchInput){
+    searchInput.addEventListener("input", () => drawOptions(searchInput.value));
+    searchInput.addEventListener("click", e => e.stopPropagation());
+    searchInput.addEventListener("keydown", e => {
+      if(e.key === "Escape"){ e.stopPropagation(); closeAllMsel(); }
+      // Enter wählt den einzigen verbleibenden Treffer
+      if(e.key === "Enter"){
+        const q = searchInput.value.trim().toLowerCase();
+        const hits = q ? cfg.options.filter(o => o.label.toLowerCase().includes(q)) : cfg.options;
+        if(hits.length === 1){ e.preventDefault(); cfg.toggle(hits[0].value); if(!cfg.multi) closeAllMsel(); }
+      }
+    });
+  }
+
+  // Trigger-Klick (nur einmal binden)
+  if(!trigger._bound){
+    trigger._bound = true;
+    trigger.onclick = e => {
+      e.stopPropagation();
+      const wasOpen = root.classList.contains("open");
+      closeAllMsel();
+      if(!wasOpen){
+        root.classList.add("open");
+        // Suchfeld beim Öffnen fokussieren
+        const si = panel.querySelector(".msel-search");
+        if(si){ si.value = ""; setTimeout(() => si.focus(), 20); }
+      }
+    };
+    panel.addEventListener("click", e => e.stopPropagation());
+  }
+}
+function closeAllMsel(){ document.querySelectorAll(".msel.open").forEach(m => m.classList.remove("open")); }
+function renderStagePath(){
+  const sp = $("#stagePath"); sp.innerHTML = "";
+  STATUSES.forEach(st => {
+    const b = document.createElement("button");
+    b.className = "stage" + (editing.status===st?" aktiv":"");
+    b.textContent = STATUS_LABEL[st];
+    b.onclick = () => { editing.status = st; renderStagePath(); };
+    sp.appendChild(b);
+  });
+}
+let subDragId = null;   // aktuell gezogener Subtask (für Drag&Drop-Sortierung)
+
+function renderSubtasks(){
+  const list = $("#subList"); list.innerHTML = "";
+  editing.subtasks.forEach(s => {
+    if(!Array.isArray(s.owners)) s.owners = [];
+    const row = document.createElement("div");
+    row.className = "sub-item" + (s.done?" done":"");
+    row.dataset.sid = s.id;
+
+    // Drag-Handle (nur dieses Element ist ziehbar, damit Text-Auswahl etc. normal bleibt)
+    const grip = document.createElement("span");
+    grip.className = "sub-drag"; grip.textContent = "⠿"; grip.title = "Ziehen zum Sortieren";
+    grip.draggable = true;
+    grip.addEventListener("dragstart", e => {
+      subDragId = s.id; row.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+      try { e.dataTransfer.setData("text/plain", s.id); } catch(_){}
+    });
+    grip.addEventListener("dragend", () => {
+      subDragId = null; row.classList.remove("dragging");
+      list.querySelectorAll(".sub-item").forEach(r => r.classList.remove("drop-above","drop-below"));
+    });
+
+    const cb = document.createElement("span"); cb.className = "cb" + (s.done?" done":"");
+    cb.onclick = () => { s.done=!s.done; renderSubtasks(); };
+
+    const txt = document.createElement("span"); txt.className = "sub-txt"; txt.textContent = s.text;
+    txt.title = "Klicken zum Bearbeiten";
+    txt.onclick = () => startEditSubtask(s.id);
+
+    // Owner-Chip + Dropdown
+    const own = document.createElement("div"); own.className = "sub-own";
+    const btn = document.createElement("button");
+    btn.className = "sub-own-btn" + (s.owners.length?"":" empty");
+    btn.innerHTML = s.owners.length ? esc(s.owners.join(", ")) : "+ Owner";
+    const panel = document.createElement("div"); panel.className = "sub-own-panel";
+    owners.forEach(o => {
+      const r = document.createElement("div");
+      r.className = "dd-opt" + (s.owners.includes(o)?" sel":"");
+      r.innerHTML = `<span class="box"></span>${esc(o)}`;
+      r.onclick = e => { e.stopPropagation(); const i=s.owners.indexOf(o); i>=0?s.owners.splice(i,1):s.owners.push(o); renderSubtasks(); openSubOwnerPanel(s.id); };
+      panel.appendChild(r);
+    });
+    btn.onclick = e => { e.stopPropagation(); const wasOpen=panel.classList.contains("open"); closeAllSubPanels(); if(!wasOpen) panel.classList.add("open"); };
+    panel.dataset.sid = s.id;
+    own.appendChild(btn); own.appendChild(panel);
+
+    const del = document.createElement("button"); del.className = "sub-del"; del.textContent = "×";
+    del.onclick = () => { editing.subtasks = editing.subtasks.filter(x=>x!==s); renderSubtasks(); };
+
+    // Drop-Ziel: die ganze Zeile reagiert auf darüber gezogene Subtasks
+    row.addEventListener("dragover", e => {
+      if(!subDragId || subDragId === s.id) return;
+      e.preventDefault(); e.dataTransfer.dropEffect = "move";
+      const rect = row.getBoundingClientRect();
+      const before = (e.clientY - rect.top) < rect.height / 2;
+      row.classList.toggle("drop-above", before);
+      row.classList.toggle("drop-below", !before);
+    });
+    row.addEventListener("dragleave", () => row.classList.remove("drop-above","drop-below"));
+    row.addEventListener("drop", e => {
+      if(!subDragId || subDragId === s.id) return;
+      e.preventDefault();
+      const rect = row.getBoundingClientRect();
+      const before = (e.clientY - rect.top) < rect.height / 2;
+      moveSubtask(subDragId, s.id, before);
+    });
+
+    row.append(grip, cb, txt, own, del);
+    list.appendChild(row);
+  });
+  const done = editing.subtasks.filter(s=>s.done).length;
+  $("#subCount").textContent = editing.subtasks.length ? `${done}/${editing.subtasks.length}` : "";
+}
+
+// Subtask "dragId" vor/nach "targetId" einsortieren
+function moveSubtask(dragId, targetId, before){
+  const arr = editing.subtasks;
+  const from = arr.findIndex(x => x.id === dragId);
+  if(from < 0) return;
+  const [moved] = arr.splice(from, 1);
+  let to = arr.findIndex(x => x.id === targetId);
+  if(to < 0){ arr.push(moved); }
+  else { if(!before) to += 1; arr.splice(to, 0, moved); }
+  renderSubtasks();
+}
+
+// Subtask-Text inline bearbeiten
+function startEditSubtask(sid){
+  const s = editing.subtasks.find(x => x.id === sid); if(!s) return;
+  const row = $(`.sub-item[data-sid="${sid}"]`); if(!row) return;
+  const txt = row.querySelector(".sub-txt"); if(!txt) return;
+  const input = document.createElement("input");
+  input.className = "sub-edit"; input.value = s.text; input.autocomplete = "off";
+  const commit = () => { const v = input.value.trim(); if(v) s.text = v; renderSubtasks(); };
+  input.addEventListener("keydown", e => {
+    if(e.key === "Enter"){ e.preventDefault(); commit(); }
+    else if(e.key === "Escape"){ e.preventDefault(); renderSubtasks(); }
+  });
+  input.addEventListener("blur", commit);
+  txt.replaceWith(input);
+  input.focus(); input.select();
+}
+function closeAllSubPanels(){ document.querySelectorAll(".sub-own-panel.open").forEach(p=>p.classList.remove("open")); }
+function openSubOwnerPanel(sid){ const p = document.querySelector(`.sub-own-panel[data-sid="${sid}"]`); if(p) p.classList.add("open"); }
+function addSubtask(){
+  const inp = $("#subInput"); const v = inp.value.trim(); if(!v) return;
+  editing.subtasks.push({ id:"s"+Math.random().toString(36).slice(2,7), text:v, done:false, owners:[] });
+  inp.value=""; renderSubtasks(); inp.focus();
+}
+$("#subAdd").onclick = addSubtask;
+$("#subInput").addEventListener("keydown", e => { if(e.key==="Enter"){ e.preventDefault(); addSubtask(); } });
+
+let updEditingId = null;   // Update, das gerade bearbeitet wird
+
+function renderUpdates(){
+  const list = $("#updList"); list.innerHTML = "";
+  editing.updates.slice().reverse().forEach(u => {
+    const d = document.createElement("div");
+    d.className = "upd";
+
+    if(updEditingId === u.id){
+      // Bearbeitungsmodus: Rich-Text-Editor mit Speichern/Abbrechen
+      const editedTxt = u.edited ? `<span class="upd-edited">· bearbeitet</span>` : "";
+      d.innerHTML = `<div class="upd-meta">${esc(u.author||"—")} · ${esc(u.ts||"")} ${editedTxt}</div>
+        <div class="upd-edit-wrap">
+          <div class="rte-wrap" data-rte="updedit">
+            <div class="rte-bar"></div>
+            <div class="rte sm" contenteditable="true" data-placeholder="Update bearbeiten …"></div>
+          </div>
+          <div class="upd-edit-actions">
+            <button type="button" class="save">Speichern</button>
+            <button type="button" class="cancel">Abbrechen</button>
+          </div>
+        </div>`;
+      list.appendChild(d);
+      const wrap = d.querySelector(".rte-wrap");
+      const ed = wrap.querySelector(".rte");
+      initRte(wrap);
+      rteSet(ed, u.text);
+      ed.focus();
+      d.querySelector(".save").onclick = () => {
+        const v = rteGet(ed).trim();
+        if(v){ u.text = v; u.edited = true; }
+        updEditingId = null; renderUpdates();
+      };
+      d.querySelector(".cancel").onclick = () => { updEditingId = null; renderUpdates(); };
+      return;
+    }
+
+    const editedTxt = u.edited ? `<span class="upd-edited">· bearbeitet</span>` : "";
+    d.innerHTML = `<div class="upd-meta">${esc(u.author||"—")} · ${esc(u.ts||"")} ${editedTxt}
+        <span class="upd-actions">
+          <button type="button" class="edit">Bearbeiten</button>
+          <button type="button" class="del">Löschen</button>
+        </span>
+      </div>
+      <div class="upd-text md">${mdToHtml(u.text)}</div>`;
+    d.querySelector(".edit").onclick = () => { updEditingId = u.id; renderUpdates(); };
+    d.querySelector(".del").onclick = () => {
+      if(confirm("Dieses Update löschen?")){
+        editing.updates = editing.updates.filter(x => x !== u);
+        if(updEditingId === u.id) updEditingId = null;
+        renderUpdates();
+      }
+    };
+    list.appendChild(d);
+  });
+}
+let letzterAutor = null;   // in dieser Sitzung zuletzt gewählter Update-Autor (Vorauswahl)
+
+// Füllt das Autor-Dropdown mit allen Ownern; wählt den zuletzt genutzten vor.
+function renderUpdAuthor(){
+  const sel = $("#updAuthor"); if(!sel) return;
+  const vorauswahl = letzterAutor && owners.includes(letzterAutor) ? letzterAutor : "";
+  sel.innerHTML = `<option value="">— wählen —</option>` +
+    owners.map(o => `<option value="${esc(o)}"${o===vorauswahl?" selected":""}>${esc(o)}</option>`).join("");
+}
+
+function addUpdate(){
+  const ed = $("#updInput"); const v = rteGet(ed).trim(); if(!v) return;
+  const sel = $("#updAuthor");
+  const autor = sel ? sel.value : "";
+  // Autor ist Pflicht: ohne Auswahl kurz das Feld markieren und abbrechen
+  if(!autor){
+    const wrap = $("#updAuthorWrap");
+    if(wrap){ wrap.classList.add("missing"); setTimeout(()=>wrap.classList.remove("missing"), 1500); }
+    if(sel) sel.focus();
+    return;
+  }
+  letzterAutor = autor;
+  const ts = new Date().toISOString().slice(0,16).replace("T"," ");
+  editing.updates.push({ id:"u"+Math.random().toString(36).slice(2,7), author:autor, ts, text:v, edited:false });
+  rteSet(ed, ""); renderUpdates();
+}
+$("#updInput").addEventListener("keydown", e => {
+  if((e.metaKey||e.ctrlKey) && e.key==="Enter"){ e.preventDefault(); addUpdate(); }
+});
+$("#updSend").addEventListener("click", addUpdate);
+$("#updAuthor").addEventListener("change", () => {
+  const wrap = $("#updAuthorWrap"); if(wrap) wrap.classList.remove("missing");
+});
+
+function saveDialog(){
+  editing.title = $("#fTitle").value.trim() || "";
+  editing.goal  = rteGet($("#fGoal"));
+  editing.desc  = rteGet($("#fDesc"));
+  // Phase steckt bereits in editing.phaseId (Dropdown setzt sie direkt)
+
+  // Validierung: Titel, Phase und mindestens ein Owner sind Pflicht
+  const fehlt = [];
+  $("#mselPhase").classList.remove("invalid");
+  $("#mselOwners").classList.remove("invalid");
+  if(!editing.title) fehlt.push("Titel");
+  if(!editing.phaseId){ fehlt.push("Phase"); $("#mselPhase").classList.add("invalid"); }
+  if(!editing.owners.length){ fehlt.push("Owner"); $("#mselOwners").classList.add("invalid"); }
+  if(fehlt.length){
+    const msg = $("#valMsg");
+    msg.textContent = "Bitte ausfüllen: " + fehlt.join(", ");
+    msg.classList.add("show");
+    if(!editing.title) $("#fTitle").focus();
+    return;
+  }
+  $("#valMsg").classList.remove("show");
+  saveTicket(editing, editSnapshot);
+  closeDialog(); renderCurrentView();
+}
+function closeDialog(){ $("#overlay").classList.remove("open"); editing=null; clearHash(); }
+
+/* ===== Ticket-Deep-Links (URL-Hash, GitHub-Pages-tauglich) ===== */
+function setHashTicket(id){
+  const neu = "#ticket=" + encodeURIComponent(id);
+  if(location.hash !== neu){ history.replaceState(null, "", location.pathname + location.search + neu); }
+}
+function clearHash(){
+  if(location.hash.startsWith("#ticket=")){ history.replaceState(null, "", location.pathname + location.search); }
+}
+function ticketIdFromHash(){
+  const m = location.hash.match(/^#ticket=(.+)$/);
+  return m ? decodeURIComponent(m[1]) : null;
+}
+// Öffnet das im Hash genannte Ticket — sobald die Daten geladen sind.
+function openTicketFromHash(){
+  const id = ticketIdFromHash();
+  if(!id) return;
+  const t = tickets.find(x => x.id === id);
+  if(t){ openTicket(id); }
+  else {
+    // Ticket nicht (mehr) vorhanden: sauberer Hinweis statt stiller Fehler
+    clearHash();
+    zeigeToast("Dieses Ticket existiert nicht mehr oder wurde noch nicht geladen.");
+  }
+}
+// Reagiert auf manuelle Hash-Änderung / Zurück-Button
+window.addEventListener("hashchange", () => {
+  const id = ticketIdFromHash();
+  if(id){ if(!$("#overlay").classList.contains("open")) openTicketFromHash(); }
+  else if($("#overlay").classList.contains("open")){ closeDialog(); }
+});
+
+// Kleiner Hinweis-Toast
+function zeigeToast(text){
+  let el = $("#toast");
+  if(!el){ el = document.createElement("div"); el.id = "toast"; el.className = "toast"; document.body.appendChild(el); }
+  el.textContent = text;
+  el.classList.add("show");
+  clearTimeout(zeigeToast._t);
+  zeigeToast._t = setTimeout(() => el.classList.remove("show"), 2600);
+}
+
+// Ziel-Spalte seitlich ein-/ausklappen
+function setGoalCollapsed(zu){
+  document.querySelector(".modal-body")?.classList.toggle("goal-zu", zu);
+}
+$("#goalToggle").onclick = () => setGoalCollapsed(true);
+$("#goalReopen").onclick = () => { setGoalCollapsed(false); $("#fGoal").focus(); };
+
+$("#btnSave").onclick   = saveDialog;
+$("#btnCancel").onclick = closeDialog;
+$("#btnDelete").onclick = () => { if(editing?.id && confirm("Ticket löschen?")){ deleteTicket(editing.id); closeDialog(); renderCurrentView(); } };
+$("#btnCopyLink").onclick = async () => {
+  if(!editing?.id) return;
+  const url = location.origin + location.pathname + location.search + "#ticket=" + encodeURIComponent(editing.id);
+  try {
+    await navigator.clipboard.writeText(url);
+    zeigeToast("Link kopiert — kann in Slack geteilt werden.");
+  } catch(_){
+    // Fallback, falls Clipboard-API blockiert (z.B. file://)
+    const ta = document.createElement("textarea"); ta.value = url; document.body.appendChild(ta);
+    ta.select(); try { document.execCommand("copy"); zeigeToast("Link kopiert."); } catch(e){ zeigeToast(url); }
+    ta.remove();
+  }
+};
+$("#btnNew").onclick    = () => openTicket(null);
+$("#overlay").addEventListener("mousedown", e => { if(e.target===$("#overlay")) closeDialog(); });
+document.addEventListener("keydown", e => { if(e.key==="Escape" && $("#overlay").classList.contains("open")) closeDialog(); });
+
+$("#btnFocus").onclick = () => {
+  focusMode = !focusMode;
+  $("#btnFocus").classList.toggle("primary", focusMode);
+  renderBoard();
+};
+
+$("#btnView").onclick = () => setView(viewMode === "board" ? "tasks" : "board");
+
+// Klick aufs Sync-Badge öffnet/schließt das Speicher-Panel (zeigt zuletzt Gespeichertes)
+const _sb = $("#syncBadge");
+if(_sb) _sb.onclick = (e) => { e.stopPropagation(); toggleSavePanel(); };
+const _dw = $("#dataWarn"); if(_dw) _dw.onclick = () => { if(dataWarnung) alert("Datenproblem im Sheet:\n\n" + dataWarnung); };
+// Klick außerhalb schließt das Panel
+document.addEventListener("click", (e) => {
+  const wrap = $("#syncWrap");
+  if(wrap && !wrap.contains(e.target)) closeSavePanel();
+});
+
+$("#btnRefresh").onclick = async () => {
+  // Ungespeicherte Änderungen zuerst durchlassen, sonst gingen sie beim Neuladen verloren
+  const offen = queue.filter(j => j.state !== "fehler").length;
+  const fehler = queue.some(j => j.state === "fehler");
+  if(fehler && !confirm("Es gibt einen Sync-Fehler mit ungespeicherten Änderungen. Trotzdem neu laden? Die betroffene Änderung geht dann verloren.")) return;
+  if(offen && !fehler){ alert("Es wird gerade gespeichert. Bitte kurz warten und erneut versuchen."); return; }
+  const btn = $("#btnRefresh"); btn.disabled = true; btn.textContent = "…";
+  try {
+    queue.length = 0;              // ggf. fehlerhaften Auftrag verwerfen
+    await load();
+    renderDropdowns();
+    renderBoard();
+    renderSync();
+  } catch(e){
+    alert("Neu laden fehlgeschlagen: " + (e.message||e));
+  } finally {
+    btn.disabled = false; btn.textContent = "↻";
+  }
+};
+
+/* ===================== THEME ===================== */
+$("#btnTheme").onclick = () => {
+  document.body.classList.toggle("dark");
+  $("#btnTheme").textContent = document.body.classList.contains("dark") ? "Hell" : "Dunkel";
+};
+
+/* ===================== RICH-TEXT (Markdown ⇄ HTML) ===================== */
+/* Gespeichert wird Markdown. Im Editor als HTML gerendert, beim Speichern zurück. */
+function mdInline(s){
+  return s
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*([^*\n]+)\*/g, "<em>$1</em>")
+    .replace(/`([^`]+)`/g, "<code>$1</code>");
+}
+function mdToHtml(text){
+  const lines = esc(text||"").split(/\r?\n/);
+  let html = "", i = 0;
+  const indentW = s => s.replace(/\t/g,"  ").length;
+  function parseList(indent){
+    const type = /\d+\./.test(lines[i].match(/^(\s*)([-*]|\d+\.)\s+/)[2]) ? "ol" : "ul";
+    html += "<"+type+">";
+    while(i < lines.length){
+      const lm = lines[i].match(/^(\s*)([-*]|\d+\.)\s+(.*)$/);
+      if(!lm) break;
+      const ind = indentW(lm[1]);
+      if(ind < indent) break;
+      if(ind > indent){ parseList(ind); continue; }
+      const thisType = /\d+\./.test(lm[2]) ? "ol" : "ul";
+      if(thisType !== type) break;
+      html += `<li>${mdInline(lm[3])}`;
+      i++;
+      if(i < lines.length){ const nm = lines[i].match(/^(\s*)([-*]|\d+\.)\s+/); if(nm && indentW(nm[1]) > indent) parseList(indentW(nm[1])); }
+      html += "</li>";
+    }
+    html += "</"+type+">";
+  }
+  while(i < lines.length){
+    const line = lines[i];
+    let m;
+    if(line.match(/^\s*&gt;\s?/)){
+      html += "<blockquote>";
+      while(i < lines.length && (m = lines[i].match(/^\s*&gt;\s?(.*)$/))){ html += `<div>${mdInline(m[1]) || "<br>"}</div>`; i++; }
+      html += "</blockquote>"; continue;
+    }
+    if(line.match(/^(\s*)([-*]|\d+\.)\s+/)){ parseList(indentW(line.match(/^(\s*)/)[1])); continue; }
+    if(line.trim()===""){ html += "<div><br></div>"; i++; continue; }
+    html += `<div>${mdInline(line)}</div>`; i++;
+  }
+  return html;
+}
+function htmlToMd(root){
+  function inline(node){
+    let s="";
+    node.childNodes.forEach(n=>{
+      if(n.nodeType===3){ s+=n.nodeValue.replace(/\u00a0/g," "); return; }
+      if(n.nodeType!==1) return;
+      const tag=n.nodeName.toLowerCase();
+      if(tag==="br"){ s+="\n"; return; }
+      const inner=inline(n);
+      if(tag==="strong"||tag==="b") s+= inner?("**"+inner+"**"):"";
+      else if(tag==="em"||tag==="i") s+= inner?("*"+inner+"*"):"";
+      else if(tag==="code") s+= inner?("`"+inner+"`"):"";
+      else if(tag==="span"){ const st=(n.getAttribute("style")||"").toLowerCase(); let x=inner; if(/italic/.test(st))x="*"+x+"*"; if(/bold|[6-9]00/.test(st))x="**"+x+"**"; s+=x; }
+      else if(tag==="ul"||tag==="ol"){ /* separat als Block */ }
+      else s+=inner;
+    });
+    return s;
+  }
+  // Wie inline(), aber für einen EINZELNEN Knoten (Textknoten ODER Inline-Element),
+  // der direkt übergeben wird — inline() selbst liest nur die Kinder eines Elements.
+  function inlineNode(n){
+    if(n.nodeType===3) return n.nodeValue.replace(/\u00a0/g," ");
+    if(n.nodeType!==1) return "";
+    const tag=n.nodeName.toLowerCase();
+    if(tag==="br") return "\n";
+    const inner=inline(n);
+    if(tag==="strong"||tag==="b") return inner?("**"+inner+"**"):"";
+    if(tag==="em"||tag==="i") return inner?("*"+inner+"*"):"";
+    if(tag==="code") return inner?("`"+inner+"`"):"";
+    if(tag==="span"){ const st=(n.getAttribute("style")||"").toLowerCase(); let x=inner; if(/italic/.test(st))x="*"+x+"*"; if(/bold|[6-9]00/.test(st))x="**"+x+"**"; return x; }
+    return inner;
+  }
+  const lines=[];
+  const BLOECKE = "ul,ol,blockquote,div,p";
+  const hatBlock = n => !!(n.querySelector && n.querySelector(BLOECKE));
+  function listBlock(node, ordered, depth){
+    const pad="  ".repeat(depth); let idx=1;
+    [...node.children].forEach(el=>{
+      const t=el.nodeName.toLowerCase();
+      if(t==="li"){
+        lines.push(pad + (ordered ? (idx++)+". " : "- ") + inline(el).trim());
+        [...el.children].forEach(ch=>{ if(ch.nodeName==="UL"||ch.nodeName==="OL") listBlock(ch, ch.nodeName==="OL", depth+1); });
+      } else if(t==="ul"){ listBlock(el,false,depth+1); }
+      else if(t==="ol"){ listBlock(el,true,depth+1); }
+    });
+  }
+  const INLINE_TAGS = "b,strong,i,em,code,span,a,u,s,sub,sup,font,mark,small";
+  const istInline = n => n.nodeType===3 || (n.nodeType===1 && INLINE_TAGS.split(",").includes(n.nodeName.toLowerCase()) && !hatBlock(n));
+  function block(container){
+    let inlineBuf = "";   // sammelt aufeinanderfolgende Inline-Knoten/Text zu EINER Zeile
+    const flushInline = () => { if(inlineBuf!==""){ const t=inlineBuf.replace(/\n+$/,""); if(t!=="") lines.push(t); inlineBuf=""; } };
+    container.childNodes.forEach(n=>{
+      // Inline-Knoten (Text, <b>, <i>, <code>, <span> …) puffern, damit "Text <b>fett</b>"
+      // als eine Zeile "Text **fett**" herauskommt statt in zwei Zeilen zu zerfallen.
+      if(istInline(n)){ inlineBuf += inlineNode(n); return; }
+      flushInline();
+      if(n.nodeType!==1) return;
+      const tag=n.nodeName.toLowerCase();
+      if(tag==="ul"){ listBlock(n,false,0); }
+      else if(tag==="ol"){ listBlock(n,true,0); }
+      else if(tag==="blockquote"){ const von=lines.length; block(n); for(let k=von;k<lines.length;k++) lines[k]=("> "+lines[k]).replace(/\s+$/,""); }
+      else if(tag==="div"||tag==="p"){ if(hatBlock(n)){ block(n); } else { lines.push(inline(n).replace(/\n+$/,"")); } }
+      else if(tag==="br"){ lines.push(""); }
+      else if(hatBlock(n)){ block(n); }
+      else { const t=inline(n); if(t) lines.push(t); }
+    });
+    flushInline();
+  }
+  block(root);
+  return lines.join("\n").replace(/^\n+/,"").replace(/\n+$/,"");
+}
+// Einzeilige Vorschau für Karten
+function mdPreview(text){
+  return mdInline(esc(text||"")
+    .replace(/^\s*&gt;\s?/gm, "» ")
+    .replace(/^\s*([-*]|\d+\.)\s+/gm, "• ")
+    .replace(/\n+/g, " "));
+}
+
+/* Editor-Verhalten */
+function rteExec(cmd,val){ try{ document.execCommand("styleWithCSS",false,false); }catch(_){} document.execCommand(cmd,false,val||null); }
+function rteVorfahr(ed, test){ let n=window.getSelection().anchorNode; while(n && n!==ed){ if(n.nodeType===1 && test(n)) return n; n=n.parentNode; } return null; }
+function rteBlockAm(ed){ let n=window.getSelection().anchorNode; while(n && n!==ed){ if(n.nodeType===1 && /^(DIV|P|LI|BLOCKQUOTE)$/.test(n.nodeName)) return n; n=n.parentNode; } return null; }
+function rteQuoteToggle(ed){
+  const bq = rteVorfahr(ed, el=>el.nodeName==="BLOCKQUOTE");
+  if(bq){ // auflösen: Kinder vor blockquote schieben
+    while(bq.firstChild) bq.parentNode.insertBefore(bq.firstChild, bq);
+    bq.remove();
+  } else {
+    try{ document.execCommand("formatBlock",false,"<blockquote>"); }catch(_){}
+  }
+  ed.dispatchEvent(new Event("input"));
+}
+function rtePlaceholder(ed){ const empty=!ed.textContent.trim() && !ed.querySelector("ul,ol"); ed.classList.toggle("is-empty", empty); }
+function rteSet(ed, md){ ed.innerHTML = md ? mdToHtml(md) : ""; rtePlaceholder(ed); }
+function rteGet(ed){ return htmlToMd(ed); }
+
+// Liste anlegen (aus normalem Text heraus)
+function rteListe(ed, ordered){ rteExec(ordered ? "insertOrderedList" : "insertUnorderedList"); }
+
+// ===== Ein- und Ausrücken von Listenpunkten =====
+// Nicht via execCommand("indent"): Chrome erzeugt daraus ungültiges <ul><ul> und
+// verschmilzt Punkte. Wir hängen den <li> selbst um.
+function rteCurrentLi(ed){ let n=window.getSelection().anchorNode; while(n && n!==ed){ if(n.nodeType===1 && n.nodeName==="LI") return n; n=n.parentNode; } return null; }
+function rteIndentLi(ed){
+  const li = rteCurrentLi(ed); if(!li) return false;
+  const prev = li.previousElementSibling;
+  if(!prev || prev.nodeName!=="LI") return false;      // erster Punkt kann nicht rutschen
+  let sub = prev.lastElementChild;
+  if(!sub || (sub.nodeName!=="UL" && sub.nodeName!=="OL")){
+    sub = document.createElement(li.parentNode.nodeName);  // gleiche Listenart
+    prev.appendChild(sub);
+  }
+  sub.appendChild(li);
+  return true;
+}
+function rteOutdentLi(ed){
+  const li = rteCurrentLi(ed); if(!li) return false;
+  const liste = li.parentNode;
+  const elternLi = liste.parentNode;
+  if(!elternLi || elternLi.nodeName!=="LI") return false;   // schon ganz außen
+  const rest = [...liste.children].slice([...liste.children].indexOf(li) + 1);
+  elternLi.parentNode.insertBefore(li, elternLi.nextSibling);
+  if(rest.length){
+    let sub = li.lastElementChild;
+    if(!sub || (sub.nodeName!=="UL" && sub.nodeName!=="OL")){ sub = document.createElement(liste.nodeName); li.appendChild(sub); }
+    rest.forEach(r=> sub.appendChild(r));
+  }
+  if(!liste.children.length) liste.remove();
+  return true;
+}
+// Umbau ausführen und Cursor an derselben Stelle wiederherstellen
+function rteMitCursor(fn){
+  const sel = window.getSelection();
+  if(!sel.rangeCount) return false;
+  const r = sel.getRangeAt(0), knoten = r.startContainer, pos = r.startOffset;
+  const ok = fn();
+  if(ok) try {
+    const max = knoten.nodeType===3 ? knoten.nodeValue.length : knoten.childNodes.length;
+    const neu = document.createRange();
+    neu.setStart(knoten, Math.min(pos, max)); neu.collapse(true);
+    sel.removeAllRanges(); sel.addRange(neu);
+  } catch(_){}
+  return ok;
+}
+function rteShiftLi(ed, raus){ return rteMitCursor(()=> raus ? rteOutdentLi(ed) : rteIndentLi(ed)); }
+
+// Tippt man "- ", "* ", "1. " oder "> " am Zeilenanfang, wird das Kürzel entfernt
+// und der Block umgewandelt. Rückgabe true = Leerzeichen verschlucken.
+function rteSpace(ed){
+  const sel=window.getSelection(); if(!sel.rangeCount) return false;
+  const r=sel.getRangeAt(0); if(!r.collapsed) return false;
+  const blk = rteBlockAm(ed);
+  if(blk && blk.nodeName==="LI") return false;   // in Listen kein erneutes Triggern
+  let before;
+  try{
+    const pre=r.cloneRange();
+    if(blk) pre.setStart(blk,0); else pre.setStart(ed,0);
+    before=pre.toString();
+  }catch(_){ return false; }
+  let trigger=null;
+  if(before==="-"||before==="*"||before==="•") trigger="ul";
+  else if(/^\d+\.$/.test(before)) trigger="ol";
+  else if(before===">") trigger="quote";
+  if(!trigger) return false;
+  for(let i=0;i<before.length;i++) document.execCommand("delete", false, null);
+  if(trigger==="ul") rteListe(ed,false);
+  else if(trigger==="ol") rteListe(ed,true);
+  else if(trigger==="quote") rteQuoteToggle(ed);
+  return true;
+}
+// Enter in leerem Listenpunkt / leerem Zitat → Block verlassen
+function rteEnter(ed){
+  const li = rteVorfahr(ed, el=>el.nodeName==="LI");
+  if(li && !li.textContent.trim()){
+    rteExec(li.parentNode.nodeName==="OL" ? "insertOrderedList" : "insertUnorderedList"); // Liste beenden
+    return true;
+  }
+  const bq = rteVorfahr(ed, el=>el.nodeName==="BLOCKQUOTE");
+  if(bq){
+    const cur = rteBlockAm(ed);
+    if(cur && cur.nodeName!=="LI" && !cur.textContent.trim()){ rteQuoteToggle(ed); return true; }
+  }
+  return false;
+}
+
+const RTE_TOOLS = [
+  { cmd:"bold",   ic:"B",  title:"Fett", style:"font-weight:700" },
+  { cmd:"italic", ic:"I",  title:"Kursiv", style:"font-style:italic" },
+  { sep:true },
+  { cmd:"ul",     ic:"•",  title:"Aufzählung" },
+  { cmd:"ol",     ic:"1.", title:"Nummerierte Liste", style:"font-size:11px" },
+  { cmd:"quote",  ic:"❝",  title:"Zitat" },
+];
+function buildRteBar(wrap){
+  const ed = wrap.querySelector(".rte");
+  const bar = wrap.querySelector(".rte-bar");
+  bar.innerHTML = "";
+  RTE_TOOLS.forEach(t => {
+    if(t.sep){ const s=document.createElement("span"); s.className="sep"; bar.appendChild(s); return; }
+    const b = document.createElement("button");
+    b.type="button"; b.title=t.title; b.textContent=t.ic; if(t.style) b.setAttribute("style", t.style);
+    b.addEventListener("mousedown", e => e.preventDefault()); // Fokus im Editor halten
+    b.onclick = () => {
+      ed.focus();
+      if(t.cmd==="bold"||t.cmd==="italic") rteExec(t.cmd);
+      else if(t.cmd==="ul") rteExec("insertUnorderedList");
+      else if(t.cmd==="ol") rteExec("insertOrderedList");
+      else if(t.cmd==="quote") rteQuoteToggle(ed);
+      rtePlaceholder(ed); syncRteBar(wrap);
+    };
+    bar.appendChild(b);
+  });
+}
+function syncRteBar(wrap){
+  const bar = wrap.querySelector(".rte-bar");
+  const btns = bar.querySelectorAll("button");
+  const state = { bold:document.queryCommandState("bold"), italic:document.queryCommandState("italic") };
+  let idx=0;
+  RTE_TOOLS.forEach(t=>{ if(t.sep) return; const b=btns[idx++]; if(!b) return;
+    let on=false;
+    if(t.cmd==="bold") on=state.bold;
+    else if(t.cmd==="italic") on=state.italic;
+    b.classList.toggle("on", on);
+  });
+}
+function initRte(wrap){
+  const ed = wrap.querySelector(".rte");
+  buildRteBar(wrap);
+  try{ document.execCommand("defaultParagraphSeparator", false, "div"); }catch(_){}
+  ed.addEventListener("keydown", e => {
+    if(e.key==="Tab"){
+      const li = rteCurrentLi(ed);
+      if(li){ e.preventDefault(); if(rteShiftLi(ed, e.shiftKey)) ed.dispatchEvent(new Event("input")); return; }
+      // außerhalb einer Liste: Tab normal lassen (Fokuswechsel)
+      return;
+    }
+    if(e.key===" "){ try{ if(rteSpace(ed)){ e.preventDefault(); rtePlaceholder(ed); } }catch(_){} return; }
+    if(e.key==="Enter" && !e.shiftKey){ try{ if(rteEnter(ed)){ e.preventDefault(); rtePlaceholder(ed); } }catch(_){} return; }
+  });
+  ed.addEventListener("input", ()=> rtePlaceholder(ed));
+  ed.addEventListener("keyup", ()=> syncRteBar(wrap));
+  ed.addEventListener("mouseup", ()=> syncRteBar(wrap));
+  rtePlaceholder(ed);
+}
+
+
+
+/* ===================== UTIL ===================== */
+function esc(s){ return (s??"").toString().replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m])); }
+// Tag-Objekt zum Namen finden; Chip-Style aus der Farbe bauen
+function tagByName(name){ return tags.find(t => t.name === name) || { name, color:"" }; }
+function tagChipStyle(color){
+  const c = color || "#8B959A";
+  return `color:${c};border-color:${c};background:color-mix(in srgb, ${c} 12%, transparent);`;
+}
+
+/* ===================== INIT ===================== */
+document.querySelectorAll(".rte-wrap").forEach(initRte);
+
+/* ===== Zuletzt aktualisiert + Auto-Refresh ===== */
+let lastFetch = 0;
+const AUTO_REFRESH_MS = 60000;   // alle 60 s
+
+function renderLastUpd(){
+  const el = $("#lastUpd"); if(!el) return;
+  if(!lastFetch){ el.textContent = ""; return; }
+  const sek = Math.round((Date.now() - lastFetch) / 1000);
+  let txt;
+  if(sek < 10) txt = "gerade aktualisiert";
+  else if(sek < 60) txt = `vor ${sek}s aktualisiert`;
+  else { const min = Math.round(sek/60); txt = `vor ${min} Min aktualisiert`; }
+  el.textContent = txt;
+}
+setInterval(renderLastUpd, 15000);  // Anzeige laufend auffrischen
+
+function dialogOffen(){ return $("#overlay").classList.contains("open"); }
+function queueOffen(){ return queue.length > 0; }
+
+async function autoRefresh(){
+  // Nicht neu laden, während gespeichert wird oder der Nutzer ein Ticket bearbeitet
+  if(!backendConfigured() || dialogOffen() || queueOffen() || document.hidden) return;
+  try {
+    await loadFromSheet();   // aktualisiert lastFetch + Cache
+    renderDropdowns();
+    renderCurrentView();
+    renderSync();
+  } catch(_){ /* still — Cache/aktueller Stand bleibt */ }
+}
+setInterval(autoRefresh, AUTO_REFRESH_MS);
+// Zusätzlich beim Zurückkommen auf den Tab aktualisieren
+document.addEventListener("visibilitychange", () => { if(!document.hidden) autoRefresh(); });
+
+// Zeichnet die aktuell aktive Ansicht (Board oder Aufgabenliste) plus die Fortschrittsbalken.
+function renderCurrentView(){ if(viewMode === "tasks") renderTasks(); else renderBoard(); renderProgress(); }
+
+function renderAll(){
+  collapsed.clear();
+  phases.forEach(p => collapsed.add(p.id+"|Done"));  // Done-Reihen eingeklappt
+  renderDropdowns();
+  renderCurrentView();
+  renderSync();
+  renderLastUpd();
+  renderDataWarnung();
+}
+async function boot(){
+  const board = $("#board");
+
+  // 1) Cache sofort zeigen, falls vorhanden — kein Warten
+  const hatCache = backendConfigured() && loadCache();
+  if(hatCache){
+    renderAll();
+    const alter = cacheAge();
+    if(alter != null){
+      const min = Math.round(alter/60000);
+      $("#syncBadge").className = "sync ok";
+      $("#syncBadge").textContent = min < 1 ? "Cache · gerade eben" : `Cache · vor ${min} Min`;
+    }
+    // Deep-Link schon aus dem Cache heraus öffnen (schnelles Erlebnis)
+    if(ticketIdFromHash() && tickets.some(t => t.id === ticketIdFromHash())) openTicketFromHash();
+  } else if(backendConfigured()){
+    board.innerHTML = `<div style="color:var(--muted);font-size:14px;padding:8px 2px;">Lade Board …</div>`;
+  }
+
+  // 2) Frisch vom Sheet laden und ersetzen
+  try {
+    await load();
+  } catch(e){
+    if(hatCache){
+      // Cache bleibt sichtbar, nur Hinweis
+      const el = $("#syncBadge"); el.className = "sync err"; el.textContent = "⚠ Offline · Cache";
+      el._err = "Konnte nicht aktualisieren: " + (e.message||e); el.title = el._err + " — klicken für Details";
+      return;
+    }
+    board.innerHTML = `<div style="color:var(--overdue);font-size:14px;padding:8px 2px;max-width:520px;">
+      Konnte das Sheet nicht laden: ${esc(e.message||String(e))}<br><br>
+      Prüfe WEBAPP_URL, die Freigabe der Web-App und ob die Tabs (Phases, Tickets, …) existieren.</div>`;
+    return;
+  }
+  renderAll();
+  // Deep-Link öffnen, sobald die frischen Daten da sind (überschreibt Cache-Vorschau sauber)
+  if(ticketIdFromHash() && !$("#overlay").classList.contains("open")) openTicketFromHash();
+  else if(ticketIdFromHash() && editing && editing.id === ticketIdFromHash()){
+    // Dialog ist offen aus dem Cache — mit frischen Daten neu füllen
+    const frisch = tickets.find(t => t.id === editing.id);
+    if(frisch){ editSnapshot = snapshot(editing.id); editing = JSON.parse(JSON.stringify(frisch)); fillDialog(); }
+    else { closeDialog(); zeigeToast("Dieses Ticket existiert nicht mehr."); }
+  }
+}
+boot();
+</script>
+</body>
+</html>
