@@ -29,7 +29,7 @@
     --weich: cubic-bezier(.2,.8,.25,1);
     --shadow-lg: 0 24px 60px rgba(0,23,41,.16);
     --chip: rgba(0,23,41,.05);
-    --phase-w: 520px;
+    --phase-w: 400px;
   }
   body.dark {
     color-scheme: dark;
@@ -174,7 +174,7 @@
   .dd-clear:hover { color: var(--accent); }
 
   /* ===== Board-Fläche: waagerecht durch Phasen scrollen ===== */
-  .board-scroll { flex: 1 1 auto; overflow-x: auto; overflow-y: hidden; padding: 22px 40px 40px; }
+  .board-scroll { flex: 1 1 auto; overflow-x: auto; overflow-y: hidden; padding: 14px 28px 28px; }
   .board { display: flex; gap: 0; height: 100%; align-items: stretch; min-height: 0; }
 
   /* ===== Aufgaben-Ansicht (Liste offener Tasks/Subtasks je Owner) ===== */
@@ -255,7 +255,7 @@
   .phase:last-child::after { display: none; }
   /* Aktive Phase: ganze Spalte dezent hinterlegt + Kopf hervorgehoben */
   .phase.aktiv { background: color-mix(in srgb, var(--accent) 6%, transparent); }
-  .phase-head { flex: 0 0 auto; padding: 8px 0 12px; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
+  .phase-head { flex: 0 0 auto; padding: 4px 0 9px; border-bottom: 1px solid var(--line); margin-bottom: 10px; }
   .phase.aktiv .phase-head { border-bottom-color: color-mix(in srgb, var(--accent) 45%, transparent); }
   .phase-head.has-desc { cursor: default; }
   .phase-name { font-size: 14px; font-weight: 400; letter-spacing: .04em; display: flex; align-items: center; gap: 6px; }
@@ -276,14 +276,14 @@
   .phase-head.has-desc:hover .phase-desc { max-height: 160px; opacity: 1; margin-top: 8px; }
   .phase-body { flex: 1 1 auto; display: flex; flex-direction: column; gap: 0; padding-right: 2px; min-height: 0; }
   /* Vertikaler Fluss-Pfeil zwischen den Status-Reihen */
-  .lane-flow { display: flex; justify-content: center; align-items: center; height: 18px; margin: 3px 0;
-               color: var(--muted-hell); font-size: 13px; user-select: none; }
+  .lane-flow { display: flex; justify-content: center; align-items: center; height: 12px; margin: 1px 0;
+               color: var(--muted-hell); font-size: 11px; user-select: none; }
   .lane-flow span { line-height: 1; opacity: .5; }
   .lane.collapsed + .lane-flow { opacity: .35; }
 
   /* Status-Reihen innerhalb einer Phase — feste Höhe, intern scrollbar */
-  .lane { display: flex; flex-direction: column; gap: 8px; margin: 6px 0; }
-  .lane-label { font-size: 9px; font-weight: 400; letter-spacing: .18em; text-transform: uppercase; color: var(--muted-hell);
+  .lane { display: flex; flex-direction: column; gap: 6px; margin: 3px 0; }
+  .lane-label { font-size: 9px; font-weight: 400; letter-spacing: .16em; text-transform: uppercase; color: var(--muted-hell);
                 display: flex; align-items: baseline; gap: 7px; cursor: pointer; user-select: none;
                 transition: color .2s var(--weich); }
   .lane-label:hover { color: var(--muted); }
@@ -291,14 +291,14 @@
   .lane.collapsed .arw { transform: rotate(-90deg); }
   .lane-label .cnt { font-variant-numeric: tabular-nums; }
   .lane.collapsed .lane-drop { display: none; }
-  .lane-drop { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-content: start;
-               height: var(--lane-h, 250px); overflow-y: auto; padding: 2px;
+  .lane-drop { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; align-content: start;
+               height: var(--lane-h, 190px); overflow-y: auto; padding: 2px;
                border: 1px dashed transparent; border-radius: var(--radius);
                transition: border-color .12s, background .12s; }
   /* Erledigt-Reihe kompakter (ist meist eingeklappt; ausgeklappt niedriger als die aktiven) */
-  .lane-done .lane-drop { height: var(--lane-done-h, 150px); }
+  .lane-done .lane-drop { height: var(--lane-done-h, 120px); }
   .lane-drop.dragover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 7%, transparent); }
-  .lane-empty { grid-column: 1 / -1; align-self: start; font-size: 11px; color: var(--hilfstext); padding: 4px 2px; }
+  .lane-empty { grid-column: 1 / -1; align-self: start; font-size: 10.5px; color: var(--hilfstext); padding: 3px 2px; }
   .lane-drop::-webkit-scrollbar { width: 5px; }
   .lane-drop::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--muted-hell) 35%, transparent); border-radius: 20px; }
   .lane-drop::-webkit-scrollbar-thumb:hover { background: var(--muted-hell); }
@@ -306,43 +306,43 @@
   .lane-drop { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--muted-hell) 35%, transparent) transparent; }
 
   /* ===== Ticket-Karte ===== */
-  .card { border: 1px solid var(--line); border-radius: var(--radius); padding: 11px 12px; background: var(--panel);
+  .card { border: 1px solid var(--line); border-radius: var(--radius); padding: 8px 10px; background: var(--panel);
           cursor: pointer; transition: border-color .2s var(--weich), box-shadow .2s var(--weich); }
   .card:hover { border-color: var(--accent); box-shadow: 0 3px 14px rgba(0,23,41,.08); }
   .card.blocked { border-left: 3px solid var(--overdue); }
   .card.done { opacity: .55; }
   /* Kopf: Titel + Tag-Punkte in einer Zeile */
-  .card-top { display: flex; align-items: flex-start; gap: 8px; }
-  .card-title { flex: 1 1 auto; font-weight: 400; font-size: 14px; line-height: 1.35; letter-spacing: -.01em;
+  .card-top { display: flex; align-items: flex-start; gap: 7px; }
+  .card-title { flex: 1 1 auto; font-weight: 400; font-size: 12.5px; line-height: 1.3; letter-spacing: -.01em;
                 overflow-wrap: anywhere; }
   .card.done .card-title { text-decoration: line-through; text-decoration-color: var(--muted-hell); }
   /* Ziel-Vorschau: klappt beim Hover dezent auf */
-  .card-goal { font-size: 12px; color: var(--muted); line-height: 1.5; overflow-wrap: anywhere;
+  .card-goal { font-size: 11px; color: var(--muted); line-height: 1.45; overflow-wrap: anywhere;
                max-height: 0; overflow: hidden; opacity: 0; margin-top: 0;
                transition: max-height .25s var(--weich), opacity .2s var(--weich), margin-top .25s var(--weich); }
-  .card:hover .card-goal { max-height: 72px; opacity: 1; margin-top: 7px;
+  .card:hover .card-goal { max-height: 60px; opacity: 1; margin-top: 6px;
                display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
   /* Aktivitäts-Punkt: erstellt/geändert in den letzten 8h */
-  .fresh-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
-               margin-right: 6px; vertical-align: middle; position: relative; top: -1px; flex: 0 0 auto; }
+  .fresh-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+               margin-right: 5px; vertical-align: middle; position: relative; top: -1px; flex: 0 0 auto; }
   /* Tags nur als farbige Punkte */
-  .tag-dots { flex: 0 0 auto; display: flex; flex-wrap: wrap; gap: 4px; padding-top: 4px; max-width: 46%; justify-content: flex-end; }
-  .tag-dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
+  .tag-dots { flex: 0 0 auto; display: flex; flex-wrap: wrap; gap: 4px; padding-top: 3px; max-width: 46%; justify-content: flex-end; }
+  .tag-dot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; }
   /* Footer: Owner-Avatare links, Meta rechts */
-  .card-foot { display: flex; align-items: center; gap: 8px; margin-top: 9px; }
-  .avatars { display: flex; flex-wrap: wrap; gap: -2px; }
-  .avatar { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px;
-            border-radius: 50%; font-size: 9px; font-weight: 600; letter-spacing: .02em;
+  .card-foot { display: flex; align-items: center; gap: 7px; margin-top: 7px; }
+  .avatars { display: flex; flex-wrap: wrap; }
+  .avatar { display: inline-flex; align-items: center; justify-content: center; width: 19px; height: 19px;
+            border-radius: 50%; font-size: 8px; font-weight: 600; letter-spacing: .02em;
             color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent);
             border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); margin-right: -4px; }
   .avatar:last-child { margin-right: 0; }
-  .foot-right { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; }
-  .card-meta { display: inline-flex; align-items: center; gap: 8px; font-size: 10px; letter-spacing: .04em;
+  .foot-right { margin-left: auto; display: inline-flex; align-items: center; gap: 7px; }
+  .card-meta { display: inline-flex; align-items: center; gap: 7px; font-size: 9.5px; letter-spacing: .04em;
                color: var(--muted-hell); }
   .card-meta .ic { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
-  .blk-dot { font-size: 11px; cursor: pointer; line-height: 1; display: inline-flex; align-items: center; gap: 1px; }
+  .blk-dot { font-size: 10px; cursor: pointer; line-height: 1; display: inline-flex; align-items: center; gap: 1px; }
   .blk-dot:hover { transform: scale(1.15); }
-  .blk-dot .blk-cnt { font-size: 9px; font-weight: 700; color: var(--overdue); }
+  .blk-dot .blk-cnt { font-size: 8.5px; font-weight: 700; color: var(--overdue); }
 
   /* ===== Overlay / Dialog ===== */
   .overlay { position: fixed; inset: 0; background: rgba(32,48,58,.28); display: none; align-items: flex-start;
@@ -424,6 +424,8 @@
   .rte ul ul { list-style: circle; }
   .rte ol ol { list-style: lower-roman; }
   .rte blockquote { margin: 8px 0; padding: 2px 0 2px 14px; border-left: 2px solid var(--accent); color: var(--muted); }
+  .rte a, .md a, .card-goal a, .upd-text a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+  .rte a:hover, .md a:hover, .card-goal a:hover, .upd-text a:hover { text-decoration: none; }
   .rte div { min-height: 1.2em; }
   .rte strong { font-weight: 700; }
 
@@ -2412,10 +2414,17 @@ $("#btnTheme").onclick = () => {
 /* ===================== RICH-TEXT (Markdown ⇄ HTML) ===================== */
 /* Gespeichert wird Markdown. Im Editor als HTML gerendert, beim Speichern zurück. */
 function mdInline(s){
-  return s
+  s = s
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
     .replace(/\*([^*\n]+)\*/g, "<em>$1</em>")
     .replace(/`([^`]+)`/g, "<code>$1</code>");
+  // Markdown-Links [Text](URL) -> <a>
+  s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+    (m, txt, url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${txt}</a>`);
+  // Nackte URLs klickbar machen — aber nicht solche, die schon in einem <a href="…"> stehen
+  s = s.replace(/(^|[^"=\/])(https?:\/\/[^\s<]+[^\s<.,;:!?)])/g,
+    (m, pre, url) => `${pre}<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`);
+  return s;
 }
 function mdToHtml(text){
   const lines = esc(text||"").split(/\r?\n/);
@@ -2465,6 +2474,7 @@ function htmlToMd(root){
       if(tag==="strong"||tag==="b") s+= inner?("**"+inner+"**"):"";
       else if(tag==="em"||tag==="i") s+= inner?("*"+inner+"*"):"";
       else if(tag==="code") s+= inner?("`"+inner+"`"):"";
+      else if(tag==="a"){ const href=n.getAttribute("href")||""; if(href && inner){ s+= (inner===href) ? href : `[${inner}](${href})`; } else s+=inner; }
       else if(tag==="span"){ const st=(n.getAttribute("style")||"").toLowerCase(); let x=inner; if(/italic/.test(st))x="*"+x+"*"; if(/bold|[6-9]00/.test(st))x="**"+x+"**"; s+=x; }
       else if(tag==="ul"||tag==="ol"){ /* separat als Block */ }
       else s+=inner;
@@ -2526,14 +2536,48 @@ function htmlToMd(root){
 }
 // Einzeilige Vorschau für Karten
 function mdPreview(text){
-  return mdInline(esc(text||"")
+  let s = esc(text||"")
     .replace(/^\s*&gt;\s?/gm, "» ")
     .replace(/^\s*([-*]|\d+\.)\s+/gm, "• ")
-    .replace(/\n+/g, " "));
+    .replace(/\n+/g, " ");
+  // In der Karten-Vorschau: Markdown-Links auf ihren Text reduzieren (kein aktiver Link,
+  // damit der Klick das Ticket öffnet statt zu navigieren)
+  s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, "$1");
+  return s
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*([^*\n]+)\*/g, "<em>$1</em>")
+    .replace(/`([^`]+)`/g, "<code>$1</code>");
 }
 
 /* Editor-Verhalten */
 function rteExec(cmd,val){ try{ document.execCommand("styleWithCSS",false,false); }catch(_){} document.execCommand(cmd,false,val||null); }
+// Link einfügen (aus markiertem Text) oder entfernen (Cursor im Link)
+function rteLink(ed){
+  const sel = window.getSelection();
+  // Steht die Auswahl in einem bestehenden Link? -> entfernen
+  let node = sel && sel.anchorNode;
+  let aTag = null;
+  while(node && node !== ed){ if(node.nodeName === "A"){ aTag = node; break; } node = node.parentNode; }
+  if(aTag){ rteExec("unlink"); return; }
+
+  const auswahl = sel ? sel.toString() : "";
+  let url = prompt("Link-URL:", "https://");
+  if(!url) return;
+  url = url.trim();
+  if(!/^https?:\/\//i.test(url)) url = "https://" + url;   // Schema ergänzen
+  if(auswahl){
+    // markierten Text verlinken
+    rteExec("createLink", url);
+    // target/rel setzen für neu erzeugten Link
+    const a = sel.anchorNode && (sel.anchorNode.parentNode?.closest?.("a"));
+    ed.querySelectorAll('a[href="'+url+'"]').forEach(el => { el.target="_blank"; el.rel="noopener noreferrer"; });
+  } else {
+    // kein Text markiert: Linktext erfragen und einfügen
+    const text = prompt("Anzeigetext:", url) || url;
+    const html = `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(text)}</a>&nbsp;`;
+    document.execCommand("insertHTML", false, html);
+  }
+}
 function rteVorfahr(ed, test){ let n=window.getSelection().anchorNode; while(n && n!==ed){ if(n.nodeType===1 && test(n)) return n; n=n.parentNode; } return null; }
 function rteBlockAm(ed){ let n=window.getSelection().anchorNode; while(n && n!==ed){ if(n.nodeType===1 && /^(DIV|P|LI|BLOCKQUOTE)$/.test(n.nodeName)) return n; n=n.parentNode; } return null; }
 function rteQuoteToggle(ed){
@@ -2642,6 +2686,7 @@ function rteEnter(ed){
 const RTE_TOOLS = [
   { cmd:"bold",   ic:"B",  title:"Fett", style:"font-weight:700" },
   { cmd:"italic", ic:"I",  title:"Kursiv", style:"font-style:italic" },
+  { cmd:"link",   ic:"🔗", title:"Link einfügen/entfernen" },
   { sep:true },
   { cmd:"ul",     ic:"•",  title:"Aufzählung" },
   { cmd:"ol",     ic:"1.", title:"Nummerierte Liste", style:"font-size:11px" },
@@ -2662,6 +2707,7 @@ function buildRteBar(wrap){
       else if(t.cmd==="ul") rteExec("insertUnorderedList");
       else if(t.cmd==="ol") rteExec("insertOrderedList");
       else if(t.cmd==="quote") rteQuoteToggle(ed);
+      else if(t.cmd==="link") rteLink(ed);
       rtePlaceholder(ed); syncRteBar(wrap);
     };
     bar.appendChild(b);
