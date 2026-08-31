@@ -203,6 +203,11 @@
                   border-right: 1px solid var(--line); border-top: 1px solid var(--line);
                   font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
   .g-grouplabel .gl-count { font-size: 10px; font-weight: 400; color: var(--muted-hell); }
+  .g-grouplabel .gl-dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
+  .g-grouplabel .gl-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .g-grouplabel .gl-prog { margin-left: auto; flex: 0 0 auto; width: 46px; height: 5px; border-radius: 20px;
+                           background: color-mix(in srgb, var(--muted-hell) 22%, transparent); overflow: hidden; }
+  .g-grouplabel .gl-prog-fill { display: block; height: 100%; border-radius: 20px; background: var(--gr-done); }
   .gantt-nodate { flex: 0 0 auto; padding: 10px 28px; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--overdue) 4%, transparent); }
   /* Gesamtfortschritt oben */
   .gantt-progress { flex: 0 0 auto; padding: 12px 28px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 16px; }
@@ -787,6 +792,10 @@
     <button class="dd-trigger" id="ddPrioBtn">Priorität <span class="caret">▼</span></button>
     <div class="dd-panel" id="ddPrioPanel"></div>
   </div>
+  <div class="dd" id="ddTag">
+    <button class="dd-trigger" id="ddTagBtn">Tag <span class="caret">▼</span></button>
+    <div class="dd-panel" id="ddTagPanel"></div>
+  </div>
   <!-- Gantt-spezifische Controls (in der Aufgaben-Ansicht ausgeblendet) -->
   <div class="gantt-controls" id="ganttControls">
     <div class="gantt-unit">
@@ -795,7 +804,8 @@
     </div>
     <div class="gantt-group">
       <button class="seg" id="grpNone" data-group="none">Keine</button>
-      <button class="seg" id="grpOwner" data-group="owner">Nach Owner</button>
+      <button class="seg" id="grpOwner" data-group="owner">Owner</button>
+      <button class="seg" id="grpTag" data-group="tag">Tag</button>
     </div>
     <button class="btn" id="btnLinks" title="Abhängigkeits-Verbindungen ein-/ausblenden">⇄ Verbindungen</button>
   </div>
@@ -850,7 +860,14 @@
           <div class="msel-panel"></div>
         </div>
       </div>
-      <div class="mfield" id="fldBlockedBy">
+      <div class="mfield">
+        <label>Tag</label>
+        <div class="msel" id="mselTag">
+          <button type="button" class="msel-trigger"><span class="msel-vals"></span><span class="msel-caret">▼</span></button>
+          <div class="msel-panel"></div>
+        </div>
+      </div>
+      <div class="mfield" id="fldBlockedBy" style="grid-column: 1 / -1;">
         <label>Blocked by <span class="blk-hint" id="blkHint"></span></label>
         <div class="msel" id="mselBlockedBy">
           <button type="button" class="msel-trigger"><span class="msel-vals"></span><span class="msel-caret">▼</span></button>
@@ -1580,6 +1597,18 @@ function renderDropdowns(){
   });
   const c4=document.createElement("button"); c4.className="dd-clear"; c4.textContent="Alle";
   c4.onclick=()=>{ prioFilter.clear(); syncDropdowns(); renderCurrentView(); }; pp.appendChild(c4);
+  // Tags (Einzelauswahl beim Ticket, aber Filter kann mehrere zulassen)
+  const tgp = $("#ddTagPanel"); tgp.innerHTML = "";
+  if(!tags.length){ tgp.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:6px 8px;">Keine Tags</div>`; }
+  tags.forEach(tag => {
+    const r = document.createElement("div");
+    r.className = "dd-opt" + (tagFilter.has(tag.name)?" sel":"");
+    r.innerHTML = `<span class="box" style="border-color:${tag.color||'var(--muted)'};background:${tagFilter.has(tag.name)?(tag.color||'var(--accent)'):'transparent'};"></span>${esc(tag.name)}`;
+    r.onclick = () => { tagFilter.has(tag.name)?tagFilter.delete(tag.name):tagFilter.add(tag.name); syncDropdowns(); renderCurrentView(); };
+    tgp.appendChild(r);
+  });
+  if(tags.length){ const c5=document.createElement("button"); c5.className="dd-clear"; c5.textContent="Alle";
+    c5.onclick=()=>{ tagFilter.clear(); syncDropdowns(); renderCurrentView(); }; tgp.appendChild(c5); }
   syncDropdowns();
 }
 function syncDropdowns(){
@@ -1591,23 +1620,29 @@ function syncDropdowns(){
   const pb = $("#ddPrioBtn");
   pb.className = "dd-trigger" + (prioFilter.size?" has":"");
   pb.innerHTML = `Priorität${prioFilter.size?` <span class="cnt">${prioFilter.size}</span>`:""} <span class="caret">▼</span>`;
+  const tgb = $("#ddTagBtn");
+  if(tgb){ tgb.className = "dd-trigger" + (tagFilter.size?" has":"");
+    tgb.innerHTML = `Tag${tagFilter.size?` <span class="cnt">${tagFilter.size}</span>`:""} <span class="caret">▼</span>`; }
   [...$("#ddOwnerPanel").children].forEach(r=>{ if(r.classList.contains("dd-opt")) r.classList.toggle("sel", ownerFilter.has(r.textContent)); });
   [...$("#ddStatusPanel").children].forEach(r=>{ if(r.classList.contains("dd-opt")) r.classList.toggle("sel", statusFilter.has(r.textContent)); });
   [...$("#ddPrioPanel").children].forEach(r=>{ if(r.classList.contains("dd-opt")) r.classList.toggle("sel", prioFilter.has(r.textContent)); });
+  [...$("#ddTagPanel").children].forEach(r=>{ if(r.classList.contains("dd-opt")) r.classList.toggle("sel", tagFilter.has(r.textContent)); });
 }
 function toggleDD(which){
-  const o=$("#ddOwnerPanel"), s=$("#ddStatusPanel"), p=$("#ddPrioPanel");
-  [o,s,p].forEach(x=>{ if(x) x.classList.remove("open"); });
-  const map = { owner:o, status:s, prio:p };
+  const o=$("#ddOwnerPanel"), s=$("#ddStatusPanel"), p=$("#ddPrioPanel"), tg=$("#ddTagPanel");
+  [o,s,p,tg].forEach(x=>{ if(x) x.classList.remove("open"); });
+  const map = { owner:o, status:s, prio:p, tag:tg };
   if(map[which]) map[which].classList.toggle("open");
 }
 $("#ddOwnerBtn").onclick = e => { e.stopPropagation(); toggleDD("owner"); };
 $("#ddStatusBtn").onclick = e => { e.stopPropagation(); toggleDD("status"); };
 $("#ddPrioBtn").onclick = e => { e.stopPropagation(); toggleDD("prio"); };
-document.addEventListener("click", () => { $("#ddOwnerPanel").classList.remove("open"); $("#ddStatusPanel").classList.remove("open"); $("#ddPrioPanel")?.classList.remove("open"); $("#ddViewPanel")?.classList.remove("open"); closeAllSubPanels(); closeAllMsel(); });
+$("#ddTagBtn").onclick = e => { e.stopPropagation(); toggleDD("tag"); };
+document.addEventListener("click", () => { $("#ddOwnerPanel").classList.remove("open"); $("#ddStatusPanel").classList.remove("open"); $("#ddPrioPanel")?.classList.remove("open"); $("#ddTagPanel")?.classList.remove("open"); $("#ddViewPanel")?.classList.remove("open"); closeAllSubPanels(); closeAllMsel(); });
 $("#ddOwnerPanel").addEventListener("click", e=>e.stopPropagation());
 $("#ddStatusPanel").addEventListener("click", e=>e.stopPropagation());
 $("#ddPrioPanel").addEventListener("click", e=>e.stopPropagation());
+$("#ddTagPanel")?.addEventListener("click", e=>e.stopPropagation());
 
 $("#search").addEventListener("input", e => { searchQuery = e.target.value.trim().toLowerCase(); renderCurrentView(); });
 
@@ -1615,6 +1650,7 @@ function passesFilter(t){
   if(ownerFilter.size && !t.owners.some(o=>ownerFilter.has(o))) return false;
   if(statusFilter.size && !statusFilter.has(t.status)) return false;
   if(prioFilter.size && !prioFilter.has(t.prio||"")) return false;
+  if(tagFilter.size && !(t.tags||[]).some(tg=>tagFilter.has(tg))) return false;
   if(searchQuery){
     const hay = (t.title+" "+t.desc).toLowerCase();
     if(!hay.includes(searchQuery)) return false;
@@ -1908,8 +1944,33 @@ function renderGantt(){
       os.forEach(o => { (proOwner[o] = proOwner[o] || []).push(t); });
     });
     Object.keys(proOwner).sort((a,b) => a==="Ohne Owner"?1:b==="Ohne Owner"?-1:a.localeCompare(b)).forEach(o => {
-      zeilen.push({ typ:"gruppe", name:o, anzahl:proOwner[o].length });
-      sortTickets(proOwner[o]).forEach(t => zeilen.push({ typ:"ticket", t }));
+      const grp = proOwner[o];
+      const done = grp.filter(t => t.status === "Done").length;
+      zeilen.push({ typ:"gruppe", name:o, anzahl:grp.length, done });
+      sortTickets(grp).forEach(t => zeilen.push({ typ:"ticket", t }));
+    });
+  } else if(ganttGroup === "tag"){
+    // Nach Tag gruppieren (ein Ticket hat höchstens einen Tag)
+    const proTag = {};
+    mitDatum.forEach(t => {
+      const tg = (t.tags && t.tags.length) ? t.tags[0] : "Ohne Tag";
+      (proTag[tg] = proTag[tg] || []).push(t);
+    });
+    // Reihenfolge wie im Tags-Tab (von oben nach unten), unbekannte Tags danach, "Ohne Tag" zuletzt
+    const reihenfolge = tags.map(t => t.name);
+    const vorhanden = Object.keys(proTag);
+    const sortiert = vorhanden.slice().sort((a,b) => {
+      if(a==="Ohne Tag") return 1;
+      if(b==="Ohne Tag") return -1;
+      const ia = reihenfolge.indexOf(a), ib = reihenfolge.indexOf(b);
+      return (ia<0?999:ia) - (ib<0?999:ib);
+    });
+    sortiert.forEach(tg => {
+      const grp = proTag[tg];
+      const done = grp.filter(t => t.status === "Done").length;
+      const farbe = (tagByName(tg)||{}).color || "";
+      zeilen.push({ typ:"gruppe", name:tg, anzahl:grp.length, done, color:farbe });
+      sortTickets(grp).forEach(t => zeilen.push({ typ:"ticket", t }));
     });
   } else {
     sortTickets(mitDatum).forEach(t => zeilen.push({ typ:"ticket", t }));
@@ -1946,7 +2007,7 @@ function renderGantt(){
     if(z.typ === "gruppe"){
       balken += `
         <div class="g-row g-grouprow" style="top:${y}px;height:${rowH}px">
-          <div class="g-grouplabel" style="width:${labelW}px">${esc(z.name)} <span class="gl-count">${z.anzahl}</span></div>
+          <div class="g-grouplabel" style="width:${labelW}px">${z.color?`<span class="gl-dot" style="background:${z.color}"></span>`:""}<span class="gl-name">${esc(z.name)}</span> <span class="gl-count">${z.anzahl}</span>${z.anzahl?`<span class="gl-prog" title="${z.done||0}/${z.anzahl} erledigt"><span class="gl-prog-fill" style="width:${Math.round((z.done||0)/z.anzahl*100)}%"></span></span>`:""}</div>
         </div>`;
       return;
     }
@@ -2353,6 +2414,14 @@ function renderMetaFields(){
     options: owners.map(o => ({ value:o, label:o })),
     selected: () => editing.stakeholder ? [editing.stakeholder] : [],
     toggle: v => { editing.stakeholder = (editing.stakeholder===v ? "" : v); renderMetaFields(); },
+  });
+  // Tag: Einzelauswahl aus dem Tags-Tab (mit Farbe)
+  const aktTag = (editing.tags && editing.tags.length) ? editing.tags[0] : "";
+  renderMsel({
+    id:"mselTag", multi:false, placeholder: tags.length ? "Tag wählen …" : "Keine Tags im Sheet",
+    options: tags.map(t => ({ value:t.name, label:t.name, color:t.color })),
+    selected: () => aktTag ? [aktTag] : [],
+    toggle: v => { editing.tags = (aktTag===v) ? [] : [v]; renderMetaFields(); },
   });
   // Blocked by: alle anderen Tickets als Optionen (sich selbst ausschließen)
   if(!Array.isArray(editing.blockedBy)) editing.blockedBy = editing.blockedBy ? [editing.blockedBy] : [];
@@ -2805,10 +2874,12 @@ function setGanttGroup(g){
   ganttGroup = g;
   $("#grpNone").classList.toggle("active", g==="none");
   $("#grpOwner").classList.toggle("active", g==="owner");
+  $("#grpTag")?.classList.toggle("active", g==="tag");
   if(viewMode === "gantt") renderGantt();
 }
 $("#grpNone").onclick = () => setGanttGroup("none");
 $("#grpOwner").onclick = () => setGanttGroup("owner");
+$("#grpTag").onclick = () => setGanttGroup("tag");
 setGanttGroup("none");
 $("#btnLinks").onclick = () => {
   ganttLinks = !ganttLinks;
