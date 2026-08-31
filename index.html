@@ -256,6 +256,15 @@
   .g-bar.done { opacity: .6; }
   .g-bar.blocked { border-color: var(--overdue); }
   .g-bar.overdue { border-color: var(--overdue); background: color-mix(in srgb, var(--overdue) 8%, var(--panel)); }
+  /* Verbindungslinien: dezent per Default, beim Zeilen-Hover leuchten die eigenen auf */
+  /* Linien im Ruhezustand dezent ausgegraut; leuchten nur beim Hover über ihr Ticket auf */
+  .g-link { opacity: .1; transition: opacity .15s, stroke-width .15s; }
+  .g-links.hover-active .g-link { opacity: .07; }
+  .g-links.hover-active .g-link.hot { opacity: 1; stroke-width: 2.4; }
+  /* Ausgegraute (bei Suche mitgezogene) Blocker */
+  .g-row.dimmed .g-rowlabel { opacity: .5; }
+  .g-bar.dimmed, .g-milestone.dimmed { opacity: .4; filter: grayscale(.4); }
+  .g-bar.dimmed:hover, .g-milestone.dimmed:hover { opacity: .85; filter: none; }
   .g-bar-prio { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; position: relative; z-index: 1; }
   .g-bar-label { font-size: 11.5px; font-weight: 500; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 auto; position: relative; z-index: 1; }
   .g-bar-owners { font-size: 9px; color: var(--muted); white-space: nowrap; flex: 0 0 auto; position: relative; z-index: 1; }
@@ -284,6 +293,13 @@
   .g-goal-pop .gp-block { font-size: 11px; color: var(--overdue); margin-bottom: 4px; }
   .g-goal-pop .gp-title { font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin: 8px 0 4px; font-weight: 700; }
   .g-goal-pop .gp-goal { font-size: 12px; color: var(--muted); }
+  .g-goal-pop .gp-deps { margin: 7px 0 2px; display: flex; flex-direction: column; gap: 5px; }
+  .g-goal-pop .gp-dep { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+  .g-goal-pop .gp-dep-lbl { font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+  .g-goal-pop .gp-dep-lbl.wait { color: var(--overdue); }
+  .g-goal-pop .gp-dep-lbl.block { color: var(--accent); }
+  .g-goal-pop .gp-dep-item { font-size: 11px; color: var(--ink); background: var(--chip); border-radius: 12px; padding: 2px 8px; }
+  .g-goal-pop .gp-dep-item.done { color: var(--muted-hell); text-decoration: line-through; }
 
   /* ===== Aufgaben-Ansicht ===== */
   .tasks-view { flex: 1 1 auto; overflow-y: auto; padding: 22px 40px 60px; max-width: 900px; width: 100%; margin: 0 auto; }
@@ -1508,7 +1524,7 @@ let editing = null;
 let editSnapshot = null; // Stand des Tickets beim Öffnen (fürs Diffen beim Speichern)
 let dataWarnung = null;  // Hinweistext bei Sheet-Problemen (doppelte IDs o.Ä.)
 let ganttUnit = "day";   // "day" | "week"
-let ganttGroup = "none"; // "none" | "owner"
+let ganttGroup = "tag"; // "none" | "owner" | "tag"
 let ganttLinks = true;   // Verbindungslinien anzeigen
 let viewMode = "gantt";  // "gantt" | "tasks" | "graph"
 let taskOwner = null;    // in der Aufgabenliste gewählter Owner (null = alle)
@@ -1646,16 +1662,26 @@ $("#ddTagPanel")?.addEventListener("click", e=>e.stopPropagation());
 
 $("#search").addEventListener("input", e => { searchQuery = e.target.value.trim().toLowerCase(); renderCurrentView(); });
 
-function passesFilter(t){
+function passesHardFilter(t){
   if(ownerFilter.size && !t.owners.some(o=>ownerFilter.has(o))) return false;
   if(statusFilter.size && !statusFilter.has(t.status)) return false;
   if(prioFilter.size && !prioFilter.has(t.prio||"")) return false;
   if(tagFilter.size && !(t.tags||[]).some(tg=>tagFilter.has(tg))) return false;
-  if(searchQuery){
-    const hay = (t.title+" "+t.desc).toLowerCase();
-    if(!hay.includes(searchQuery)) return false;
-  }
   return true;
+}
+function passesSearch(t){
+  if(!searchQuery) return true;
+  return (t.title+" "+t.desc).toLowerCase().includes(searchQuery);
+}
+function passesFilter(t){ return passesHardFilter(t) && passesSearch(t); }
+
+// Alle (transitiven) Blocker eines Tickets sammeln — für "Blocker bei Suche mitzeigen"
+function alleBlockerIds(t, acc){
+  acc = acc || new Set();
+  blockerListe(t).forEach(b => {
+    if(!acc.has(b.id)){ acc.add(b.id); alleBlockerIds(b, acc); }
+  });
+  return acc;
 }
 
 /* ===================== DATUMS-HELFER ===================== */
@@ -1876,12 +1902,25 @@ function renderGantt(){
   const noDateWrap = $("#ganttNoDate");
   if(!inner) return;
 
-  const sichtbar = tickets.filter(passesFilter);
+  // Treffer = erfüllt ALLE aktiven Filter (harte Filter + Suche)
+  const treffer = tickets.filter(t => passesHardFilter(t) && passesSearch(t));
+  // Ist überhaupt ein Filter aktiv? Dann Blocker-Ketten der Treffer ausgegraut mitziehen.
+  const filterAktiv = !!(searchQuery || ownerFilter.size || statusFilter.size || prioFilter.size || tagFilter.size);
+  const sichtbarIds = new Set(treffer.map(t => t.id));
+  const dimmedIds = new Set();
+  if(filterAktiv){
+    treffer.forEach(t => {
+      alleBlockerIds(t).forEach(bid => {
+        if(!sichtbarIds.has(bid)){ sichtbarIds.add(bid); dimmedIds.add(bid); }
+      });
+    });
+  }
+  const sichtbar = tickets.filter(t => sichtbarIds.has(t.id));
   const mitDatum = sichtbar.filter(hatDatum);
   const ohneDatum = sichtbar.filter(t => !hatDatum(t));
 
-  // Gesamtfortschritt (alle sichtbaren Tickets)
-  renderGesamtfortschritt(sichtbar);
+  // Gesamtfortschritt: nur echte Treffer zählen (mitgezogene Blocker verwässern nicht)
+  renderGesamtfortschritt(filterAktiv ? treffer : sichtbar);
 
   // "Ohne Datum"-Liste oben
   if(ohneDatum.length){
@@ -2033,9 +2072,10 @@ function renderGantt(){
 
     const tip = `${t.title} · ${t.start}${meilenstein?"":` – ${t.end}`} (${meilenstein?"Meilenstein":`${dauer} Tage`})${t.prio?` · ${t.prio}`:""} · ${STATUS_LABEL[t.status]||t.status}${!done?` · ${prog}%`:""}`;
     if(!pos[t.id]) pos[t.id] = { x, y: y+7+13, w: meilenstein?26:w, barTop:y+7, barBot:y+7+26, mid:y+7+13, rowIndex:i };
+    const dim = dimmedIds.has(t.id) ? " dimmed" : "";
 
     const rowLabel = `
-      <div class="g-row" style="top:${y}px;height:${rowH}px" data-goal-id="${esc(t.id)}">
+      <div class="g-row${dim}" style="top:${y}px;height:${rowH}px" data-goal-id="${esc(t.id)}">
         <div class="g-rowlabel" style="width:${labelW}px" data-id="${esc(t.id)}" title="${esc(t.title)}">
           <span class="g-prio" style="background:${farbe}" title="${esc(t.prio||'ohne Priorität')}"></span>
           <span class="g-rowtitle">${esc(t.title||t.id)}</span>
@@ -2044,14 +2084,14 @@ function renderGantt(){
 
     if(meilenstein){
       balken += rowLabel + `
-        <div class="g-milestone ${done?'done':''} ${ueberfaellig?'overdue':''}" data-id="${esc(t.id)}"
+        <div class="g-milestone ${done?'done':''} ${ueberfaellig?'overdue':''}${dim}" data-id="${esc(t.id)}"
              style="left:${x}px; top:${y+7}px" title="${esc(tip)}">
           <span class="ms-diamond" style="background:${farbe}"></span>
           <span class="ms-label">${esc(t.title||t.id)}</span>
         </div>`;
     } else {
       balken += rowLabel + `
-        <div class="g-bar ${done?'done':''} ${blk?'blocked':''} ${schmal?'schmal':''} ${ueberfaellig?'overdue':''}" data-id="${esc(t.id)}"
+        <div class="g-bar ${done?'done':''} ${blk?'blocked':''} ${schmal?'schmal':''} ${ueberfaellig?'overdue':''}${dim}" data-id="${esc(t.id)}"
              style="left:${x}px; top:${y+7}px; width:${w}px" title="${esc(tip)}">
           <span class="g-handle l"></span>
           <span class="g-bar-prio" style="background:${farbe}"></span>
@@ -2097,7 +2137,7 @@ function renderGantt(){
         d = `M ${x1} ${y1} L ${bx - r} ${y1} Q ${bx} ${y1} ${bx} ${y1 + dir*r}`
           + ` L ${bx} ${y2 - dir*r} Q ${bx} ${y2} ${bx - r} ${y2} L ${x2 - 7} ${y2}`;
       }
-      linien += `<path d="${d}" fill="none" stroke="${c}" stroke-width="1.6" ${dash} marker-end="${mark}" opacity="0.85" stroke-linejoin="round" stroke-linecap="round"/>`;
+      linien += `<path class="g-link" data-from="${esc(b.id)}" data-to="${esc(t.id)}" d="${d}" fill="none" stroke="${c}" stroke-width="1.6" ${dash} marker-end="${mark}" stroke-linejoin="round" stroke-linecap="round"/>`;
     });
   });
 
@@ -2136,27 +2176,47 @@ function renderGantt(){
 // Hover über eine Gantt-Zeile zeigt das Ziel als Popover
 function bindGoalPopover(){
   const scroll = $("#ganttScroll");
+  const svg = () => $("#ganttInner").querySelector(".g-links");
   let pop = null;
-  function entferne(){ if(pop){ pop.remove(); pop = null; } }
+  function highlightAus(){
+    const s = svg(); if(!s) return;
+    s.classList.remove("hover-active");
+    s.querySelectorAll(".g-link.hot").forEach(l => l.classList.remove("hot"));
+  }
+  function highlightAn(id){
+    const s = svg(); if(!s) return;
+    s.classList.add("hover-active");
+    s.querySelectorAll(".g-link").forEach(l => {
+      if(l.dataset.from === id || l.dataset.to === id) l.classList.add("hot");
+    });
+  }
+  function entferne(){ if(pop){ pop.remove(); pop = null; } highlightAus(); }
   function zeige(t, ankerLeft, ankerTop){
     if(ganttState.drag) return;
     entferne();
+    highlightAn(t.id);
     const dauer = (parseDate(t.start)&&parseDate(t.end)) ? tageZwischen(parseDate(t.start),parseDate(t.end))+1 : null;
     const metaTeile = [];
     if(t.start && t.end) metaTeile.push(`${t.start} – ${t.end}${dauer?` · ${dauer} Tag${dauer>1?"e":""}`:""}`);
     if(t.prio) metaTeile.push(t.prio);
     if(t.owners && t.owners.length) metaTeile.push(t.owners.join(", "));
     if(t.status) metaTeile.push(STATUS_LABEL[t.status]||t.status);
-    const offen = offeneBlocker(t);
+    // Abhängigkeiten: wartet auf (Blocker) + blockiert (Nachfolger)
+    const wartetAuf = blockerListe(t);
+    const blockiert = tickets.filter(x => blockerListe(x).some(b => b.id === t.id));
+    const depHtml = (wartetAuf.length || blockiert.length) ? `
+      <div class="gp-deps">
+        ${wartetAuf.length ? `<div class="gp-dep"><span class="gp-dep-lbl wait">⛔ Wartet auf</span>${wartetAuf.map(b=>`<span class="gp-dep-item${b.status==='Done'?' done':''}">${esc(b.title||b.id)}</span>`).join("")}</div>` : ""}
+        ${blockiert.length ? `<div class="gp-dep"><span class="gp-dep-lbl block">→ Blockiert</span>${blockiert.map(b=>`<span class="gp-dep-item">${esc(b.title||b.id)}</span>`).join("")}</div>` : ""}
+      </div>` : "";
     pop = document.createElement("div");
     pop.className = "g-goal-pop";
     pop.innerHTML = `
       <div class="gp-head">${esc(t.title||t.id)}</div>
       ${metaTeile.length?`<div class="gp-meta">${esc(metaTeile.join(" · "))}</div>`:""}
-      ${offen.length?`<div class="gp-block">⛔ blockiert von: ${esc(offen.map(b=>b.title||b.id).join(", "))}</div>`:""}
+      ${depHtml}
       ${t.goal && t.goal.trim() ? `<div class="gp-title">📌 Ziel</div><div class="gp-goal">${mdToHtml(t.goal)}</div>` : ""}`;
     $("#ganttInner").appendChild(pop);
-    // Position innerhalb des sichtbaren Bereichs halten
     const scRect = scroll.getBoundingClientRect();
     const maxLeft = scroll.scrollLeft + scRect.width - pop.offsetWidth - 12;
     let left = Math.max(ganttState.labelW + 4, ankerLeft);
@@ -2166,14 +2226,13 @@ function bindGoalPopover(){
     requestAnimationFrame(() => pop && pop.classList.add("show"));
   }
   const inner = $("#ganttInner");
-  inner.querySelectorAll(".g-bar").forEach(bar => {
+  inner.querySelectorAll(".g-bar, .g-milestone").forEach(bar => {
     const t = tickets.find(x => x.id === bar.dataset.id);
     if(!t) return;
     bar.addEventListener("mouseenter", () => zeige(t, parseFloat(bar.style.left)||0, parseFloat(bar.style.top)||0));
     bar.addEventListener("mouseleave", entferne);
     bar.addEventListener("mousedown", entferne);
   });
-  // Auch über das Zeilen-Label (dort werden Titel abgeschnitten)
   inner.querySelectorAll(".g-rowlabel").forEach(lbl => {
     const t = tickets.find(x => x.id === lbl.dataset.id);
     if(!t) return;
@@ -2880,7 +2939,7 @@ function setGanttGroup(g){
 $("#grpNone").onclick = () => setGanttGroup("none");
 $("#grpOwner").onclick = () => setGanttGroup("owner");
 $("#grpTag").onclick = () => setGanttGroup("tag");
-setGanttGroup("none");
+setGanttGroup("tag");
 $("#btnLinks").onclick = () => {
   ganttLinks = !ganttLinks;
   $("#btnLinks").classList.toggle("active", ganttLinks);
@@ -2922,6 +2981,9 @@ $("#btnTheme").onclick = () => {
   document.body.classList.toggle("dark");
   $("#btnTheme").textContent = document.body.classList.contains("dark") ? "Hell" : "Dunkel";
 };
+// Dunkelmodus als Standard
+document.body.classList.add("dark");
+$("#btnTheme").textContent = "Hell";
 
 /* ===================== RICH-TEXT (Markdown ⇄ HTML) ===================== */
 /* Gespeichert wird Markdown. Im Editor als HTML gerendert, beim Speichern zurück. */
