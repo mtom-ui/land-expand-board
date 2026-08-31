@@ -110,8 +110,11 @@
   .data-warn:hover { background: color-mix(in srgb, var(--overdue) 12%, transparent); }
 
   /* ===== Filterzeile ===== */
-  .filter-row { display: flex; align-items: center; gap: 14px; padding: 12px 40px; border-bottom: 1px solid var(--line);
-                background: var(--cream); }
+  .filter-row { display: flex; align-items: center; gap: 10px; padding: 10px 28px; border-bottom: 1px solid var(--line);
+                background: var(--cream); flex-wrap: wrap; }
+  .filter-row .search { max-width: 260px; }
+  .gantt-controls { margin-left: auto; display: inline-flex; align-items: center; gap: 10px; }
+  .gantt-controls.hidden { display: none; }
 
   /* ===== Fortschrittsbalken oben ===== */
   .progress-row { display: flex; gap: 48px; padding: 16px 40px 18px; border-bottom: 1px solid var(--line); background: var(--cream); }
@@ -178,6 +181,106 @@
   .board { display: flex; gap: 0; height: 100%; align-items: stretch; min-height: 0; }
 
   /* ===== Aufgaben-Ansicht (Liste offener Tasks/Subtasks je Owner) ===== */
+  /* ===== Gantt ===== */
+  .gantt-view { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+  .gantt-view[hidden] { display: none; }
+  .gantt-toolbar { flex: 0 0 auto; display: flex; align-items: center; gap: 14px; padding: 10px 28px; border-bottom: 1px solid var(--line); }
+  .gantt-unit { display: inline-flex; border: 1px solid var(--rahmen); border-radius: var(--feld-radius); overflow: hidden; }
+  .gantt-unit .seg { border: none; background: none; padding: 6px 14px; font-size: 12px; color: var(--muted); cursor: pointer; }
+  .gantt-unit .seg.active { background: var(--accent); color: var(--on-accent); }
+  .gantt-hint { font-size: 11px; color: var(--muted-hell); margin-left: auto; }
+  .gantt-group { display: inline-flex; align-items: center; gap: 8px; }
+  .gantt-group .gg-label { font-size: 11px; color: var(--muted-hell); }
+  .gantt-group .seg { border: 1px solid var(--rahmen); background: none; padding: 5px 11px; font-size: 12px; color: var(--muted); cursor: pointer; }
+  .gantt-group .seg:first-of-type { border-radius: var(--feld-radius) 0 0 var(--feld-radius); border-right: none; }
+  .gantt-group .seg:last-of-type { border-radius: 0 var(--feld-radius) var(--feld-radius) 0; }
+  .gantt-group .seg.active { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+  /* Gruppen-Kopfzeile im Gantt */
+  .g-grouprow { background: color-mix(in srgb, var(--accent) 5%, transparent); }
+  .g-grouplabel { position: sticky; left: 0; display: flex; align-items: center; gap: 8px; height: 100%;
+                  padding: 0 12px 0 14px; box-sizing: border-box; z-index: 2;
+                  background: color-mix(in srgb, var(--accent) 7%, var(--cream));
+                  border-right: 1px solid var(--line); border-top: 1px solid var(--line);
+                  font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+  .g-grouplabel .gl-count { font-size: 10px; font-weight: 400; color: var(--muted-hell); }
+  .gantt-nodate { flex: 0 0 auto; padding: 10px 28px; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--overdue) 4%, transparent); }
+  /* Gesamtfortschritt oben */
+  .gantt-progress { flex: 0 0 auto; padding: 12px 28px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 16px; }
+  .gp-bar-wrap { flex: 1 1 auto; height: 10px; border-radius: 20px; background: var(--chip); overflow: hidden; position: relative; max-width: 520px; }
+  .gp-bar-fill { height: 100%; border-radius: 20px; background: var(--gr-done); transition: width .4s var(--weich); }
+  .gp-text { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .gp-text b { color: var(--ink); font-weight: 600; }
+  .gp-stats { font-size: 11px; color: var(--muted-hell); white-space: nowrap; display: inline-flex; gap: 12px; }
+  .gp-stats .st-over { color: var(--overdue); }
+  .gantt-nodate .nd-head { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .gantt-nodate .nd-list { display: flex; flex-wrap: wrap; gap: 7px; }
+  .nd-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink);
+             border: 1px solid var(--rahmen); border-radius: 20px; padding: 5px 12px; background: var(--panel); cursor: pointer;
+             transition: border-color .15s; }
+  .nd-chip:hover { border-color: var(--accent); }
+  .nd-prio { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; }
+  .gantt-scroll { flex: 1 1 auto; overflow: auto; position: relative; }
+  .gantt-inner { position: relative; min-width: 100%; }
+  /* Zeitachse — sticky-Kopf, bleibt beim vertikalen Scrollen oben */
+  .g-axis { position: sticky; top: 0; left: 0; height: 40px; z-index: 6; background: var(--cream);
+            border-bottom: 1px solid var(--line); }
+  .g-gridlayer { position: absolute; top: 0; left: 0; z-index: 0; }
+  .g-corner { position: sticky; position: -webkit-sticky; left: 0; top: 0; height: 40px;
+              background: var(--cream); border-bottom: 1px solid var(--line); border-right: 1px solid var(--line);
+              z-index: 8; display: block; margin-top: -40px; }
+  .g-tick { position: absolute; top: 0; height: 40px; padding: 6px 0 0 5px; font-size: 10px; font-weight: 600; letter-spacing: .04em;
+            color: var(--muted); white-space: nowrap; z-index: 2; }
+  .g-tick.we { color: var(--muted-hell); }
+  .g-tick-sub { display: block; font-size: 9px; font-weight: 400; color: var(--muted-hell); margin-top: 1px; }
+  .g-grid { position: absolute; top: 40px; width: 1px; background: var(--line-zart); z-index: 0; }
+  .g-grid.we { background: color-mix(in srgb, var(--muted-hell) 12%, transparent); }
+  .g-today { position: absolute; top: 0; width: 2px; background: var(--accent); z-index: 1; opacity: .7; }
+  /* Zeilen + Balken */
+  .g-row { position: absolute; left: 0; right: 0; }
+  .g-row:nth-child(even) { background: color-mix(in srgb, var(--muted-hell) 3%, transparent); }
+  .g-rowlabel { position: sticky; left: 0; display: flex; align-items: center; gap: 7px; height: 100%; padding: 0 12px 0 14px;
+                background: var(--cream); border-right: 1px solid var(--line); cursor: pointer; z-index: 2; box-sizing: border-box; }
+  .g-rowlabel:hover .g-rowtitle { color: var(--accent); }
+  .g-prio { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
+  .g-rowtitle { font-size: 12.5px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .g-bar { position: absolute; height: 26px; border-radius: 7px; z-index: 2; cursor: grab; display: flex; align-items: center; gap: 6px;
+           padding: 0 8px; box-sizing: border-box; background: var(--panel);
+           border: 1px solid var(--rahmen); overflow: hidden; transition: box-shadow .15s, border-color .15s; }
+  .g-bar:hover { box-shadow: 0 3px 12px rgba(0,23,41,.16); border-color: var(--accent); z-index: 5; }
+  .g-bar:active { cursor: grabbing; }
+  .g-bar.done { opacity: .6; }
+  .g-bar.blocked { border-color: var(--overdue); }
+  .g-bar.overdue { border-color: var(--overdue); background: color-mix(in srgb, var(--overdue) 8%, var(--panel)); }
+  .g-bar-prio { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; position: relative; z-index: 1; }
+  .g-bar-label { font-size: 11.5px; font-weight: 500; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 auto; position: relative; z-index: 1; }
+  .g-bar-owners { font-size: 9px; color: var(--muted); white-space: nowrap; flex: 0 0 auto; position: relative; z-index: 1; }
+  /* Meilenstein (Start == Ende) als Raute */
+  .g-milestone { position: absolute; height: 26px; display: flex; align-items: center; gap: 8px; cursor: grab; z-index: 2; }
+  .g-milestone:active { cursor: grabbing; }
+  .ms-diamond { width: 15px; height: 15px; transform: rotate(45deg); border-radius: 3px; flex: 0 0 auto;
+                box-shadow: 0 1px 4px rgba(0,23,41,.2); transition: box-shadow .15s; }
+  .g-milestone:hover .ms-diamond { box-shadow: 0 2px 8px rgba(0,23,41,.35); }
+  .g-milestone.done .ms-diamond { opacity: .5; }
+  .g-milestone.overdue .ms-diamond { outline: 2px solid var(--overdue); outline-offset: 1px; }
+  .ms-label { font-size: 11.5px; color: var(--ink); white-space: nowrap; pointer-events: none; }
+  .g-handle { position: absolute; top: 0; width: 8px; height: 100%; cursor: ew-resize; z-index: 3; }
+  .g-handle.l { left: 0; } .g-handle.r { right: 0; }
+  .g-bar.schmal { overflow: visible; }
+  .g-bar-outside { position: absolute; left: calc(100% + 7px); top: 50%; transform: translateY(-50%);
+                   font-size: 11.5px; color: var(--ink); white-space: nowrap; pointer-events: none; }
+  /* Ziel-Popover beim Hover über die Zeile */
+  .g-goal-pop { position: absolute; z-index: 20; max-width: 360px; min-width: 200px; padding: 12px 14px; border-radius: 10px;
+                background: var(--cream); border: 1px solid var(--line); box-shadow: var(--shadow-lg);
+                font-size: 12px; color: var(--muted); line-height: 1.5; pointer-events: none;
+                opacity: 0; transform: translateY(3px); transition: opacity .15s, transform .15s; }
+  .g-goal-pop.show { opacity: 1; transform: translateY(0); }
+  .g-goal-pop .gp-head { font-size: 14px; font-weight: 600; color: var(--ink); line-height: 1.3; margin-bottom: 5px; }
+  .g-goal-pop .gp-meta { font-size: 10.5px; color: var(--muted-hell); margin-bottom: 4px; }
+  .g-goal-pop .gp-block { font-size: 11px; color: var(--overdue); margin-bottom: 4px; }
+  .g-goal-pop .gp-title { font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin: 8px 0 4px; font-weight: 700; }
+  .g-goal-pop .gp-goal { font-size: 12px; color: var(--muted); }
+
+  /* ===== Aufgaben-Ansicht ===== */
   .tasks-view { flex: 1 1 auto; overflow-y: auto; padding: 22px 40px 60px; max-width: 900px; width: 100%; margin: 0 auto; }
   .task-info { font-size: 11.5px; color: var(--muted-hell); margin-bottom: 12px; }
   /* ===== Abhängigkeits-Graph ===== */
@@ -366,18 +469,22 @@
   .tk-titel::placeholder { color: var(--hilfstext); }
   .tk-titel:focus { outline: none; }
 
-  /* Statuspfad — kompakte Pills, sitzt neben dem Titel */
-  .stage-path { display: flex; gap: 4px; margin: 0; flex: 0 0 auto; }
-  .stage { padding: 6px 12px; margin: 0; border: 1px solid var(--rahmen); border-radius: 20px;
-           font-size: 9.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; text-align: center;
-           background: none; color: var(--muted-hell); cursor: pointer; white-space: nowrap;
-           outline: none; -webkit-appearance: none; appearance: none;
-           transition: color .2s var(--weich), border-color .2s var(--weich), background .2s var(--weich); }
-  .stage:hover { color: var(--ink); border-color: var(--muted); }
-  .stage.aktiv { color: var(--on-accent); background: var(--accent); border-color: var(--accent); }
+  /* Status als Slide-Toggle */
+  .stage-path { display: flex; margin: 0; flex: 0 0 auto; }
+  .status-toggle { position: relative; display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+                   padding: 3px; border-radius: 22px; background: var(--chip); border: 1px solid var(--rahmen); }
+  .st-slider { position: absolute; top: 3px; bottom: 3px; left: 3px; z-index: 0; border-radius: 20px;
+               width: calc((100% - 6px) / var(--n)); background: var(--accent);
+               transform: translateX(calc(var(--idx) * 100%));
+               transition: transform .25s var(--weich), background .25s var(--weich); }
+  .st-slider.done { background: var(--gr-done); }
+  .st-seg { position: relative; z-index: 1; padding: 6px 18px; border: none; background: none; cursor: pointer;
+            font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; white-space: nowrap;
+            color: var(--muted); outline: none; transition: color .2s var(--weich); }
+  .st-seg.aktiv { color: var(--on-accent); }
   @media (max-width: 1000px){
     .tk-kopf { flex-direction: column; align-items: stretch; gap: 12px; }
-    .stage-path { flex-wrap: wrap; }
+    .status-toggle { width: 100%; }
   }
 
   .modal-body { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 28px; overflow: hidden; }
@@ -450,10 +557,9 @@
               color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent);
               border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
               padding: 2px 7px; border-radius: 20px; }
-  .goal-collapse { margin-left: auto; font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
-                   color: var(--muted); background: none; border: 1px solid var(--rahmen);
-                   border-radius: var(--feld-radius); padding: 4px 10px; cursor: pointer;
-                   transition: color .2s var(--weich), border-color .2s var(--weich); }
+  .goal-collapse { margin-left: auto; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center;
+                   font-size: 15px; color: var(--muted); background: none; border: 1px solid var(--rahmen);
+                   border-radius: var(--feld-radius); cursor: pointer; transition: color .2s var(--weich), border-color .2s var(--weich); }
   .goal-collapse:hover { color: var(--accent); border-color: var(--accent); }
   /* Eingeklappt: Ziel-Spalte raus, deutlicher Wiederöffner am Rand */
   .modal-body.goal-zu { grid-template-columns: 0 1fr 1fr; }
@@ -478,11 +584,14 @@
 
   /* ===== Kompakte Meta-Zeile mit Dropdown-Feldern ===== */
   .meta-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px 16px; margin-bottom: 20px; }
-  .meta-grid.meta-top { grid-template-columns: repeat(5, minmax(0,1fr)); gap: 10px 14px; margin-bottom: 18px; }
-  @media (max-width: 1200px){ .meta-grid.meta-top { grid-template-columns: repeat(3, minmax(0,1fr)); } }
-  @media (max-width: 1000px){ .meta-grid.meta-top { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+  .meta-grid.meta-top { grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px 20px; margin-bottom: 20px; }
+  @media (max-width: 900px){ .meta-grid.meta-top { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+  @media (max-width: 620px){ .meta-grid.meta-top { grid-template-columns: 1fr; } }
   .meta-top .mfield > label { font-size: 8.5px; margin-bottom: 4px; }
   .meta-top .msel-trigger { min-height: 32px; padding: 5px 9px; }
+  .mdate { width: 100%; min-height: 32px; padding: 5px 9px; box-sizing: border-box; font-family: inherit; font-size: 13px;
+           color: var(--ink); background: var(--panel); border: 1px solid var(--rahmen); border-radius: var(--feld-radius); }
+  .mdate:focus { outline: none; border-color: var(--accent); }
   .mfield { min-width: 0; }
   .mfield > label { display: block; font-size: 9px; font-weight: 400; letter-spacing: .14em; text-transform: uppercase;
                     color: var(--muted-hell); margin-bottom: 3px; }
@@ -651,53 +760,21 @@
     </div>
     <button class="btn" id="btnRefresh" title="Neu aus dem Sheet laden">↻</button>
     <div class="dd" id="ddView">
-      <button class="dd-trigger" id="ddViewBtn">Ansicht: Board <span class="caret">▼</span></button>
+      <button class="dd-trigger" id="ddViewBtn">Ansicht: Gantt <span class="caret">▼</span></button>
       <div class="dd-panel" id="ddViewPanel">
-        <div class="dd-opt" data-view="board"><span class="box"></span>Board</div>
+        <div class="dd-opt" data-view="gantt"><span class="box"></span>Gantt</div>
         <div class="dd-opt" data-view="tasks"><span class="box"></span>Aufgaben</div>
-        <div class="dd-opt" data-view="graph"><span class="box"></span>Abhängigkeiten</div>
       </div>
     </div>
-    <button class="btn" id="btnFocus">Fokus</button>
     <button class="btn" id="btnTheme">Dunkel</button>
     <button class="btn primary" id="btnNew">+ Neues Ticket</button>
   </div>
 </header>
 
-<div class="progress-row" id="progressRow">
-  <!-- Balken 1: Zeitverlauf über alle Phasen -->
-  <div class="prog" id="progTime">
-    <div class="prog-head">
-      <span class="prog-label">Zeitverlauf</span>
-      <span class="prog-val" id="progTimeVal"></span>
-    </div>
-    <div class="prog-track" id="progTimeTrack">
-      <div class="prog-phases" id="progTimePhases"></div>
-      <div class="prog-today" id="progTimeToday"><span class="prog-today-dot"></span></div>
-    </div>
-    <div class="prog-phase-labels" id="progTimeLabels"></div>
-    <div class="prog-ends">
-      <span id="progTimeStart"></span>
-      <span id="progTimeEnd"></span>
-    </div>
-  </div>
-  <!-- Balken 2: Anteil erledigter Tickets -->
-  <div class="prog" id="progDone">
-    <div class="prog-head">
-      <span class="prog-label">Erledigte Tickets</span>
-      <span class="prog-val" id="progDoneVal"></span>
-    </div>
-    <div class="prog-track">
-      <div class="prog-fill" id="progDoneFill"></div>
-    </div>
-    <div class="prog-ends">
-      <span id="progDoneSub"></span>
-    </div>
-  </div>
-</div>
 
-<div class="filter-row">
-  <input class="search" id="search" type="search" placeholder="Suchen: Titel, Beschreibung …">
+
+<div class="filter-row" id="filterRow">
+  <input class="search" id="search" type="search" placeholder="Suchen …">
   <div class="dd" id="ddOwner">
     <button class="dd-trigger" id="ddOwnerBtn">Owner <span class="caret">▼</span></button>
     <div class="dd-panel" id="ddOwnerPanel"></div>
@@ -706,27 +783,34 @@
     <button class="dd-trigger" id="ddStatusBtn">Status <span class="caret">▼</span></button>
     <div class="dd-panel" id="ddStatusPanel"></div>
   </div>
-  <div class="dd" id="ddTag">
-    <button class="dd-trigger" id="ddTagBtn">Tags <span class="caret">▼</span></button>
-    <div class="dd-panel" id="ddTagPanel"></div>
+  <div class="dd" id="ddPrio">
+    <button class="dd-trigger" id="ddPrioBtn">Priorität <span class="caret">▼</span></button>
+    <div class="dd-panel" id="ddPrioPanel"></div>
   </div>
-  <span class="flow-hint" title="Tickets bewegen sich innerhalb einer Phase von oben nach unten">Fortschritt <b>↓</b> Backlog · Als Nächstes · In Arbeit · Erledigt</span>
+  <!-- Gantt-spezifische Controls (in der Aufgaben-Ansicht ausgeblendet) -->
+  <div class="gantt-controls" id="ganttControls">
+    <div class="gantt-unit">
+      <button class="seg" id="unitDay" data-unit="day">Tage</button>
+      <button class="seg" id="unitWeek" data-unit="week">Wochen</button>
+    </div>
+    <div class="gantt-group">
+      <button class="seg" id="grpNone" data-group="none">Keine</button>
+      <button class="seg" id="grpOwner" data-group="owner">Nach Owner</button>
+    </div>
+    <button class="btn" id="btnLinks" title="Abhängigkeits-Verbindungen ein-/ausblenden">⇄ Verbindungen</button>
+  </div>
 </div>
 
-<div class="board-scroll" id="boardScroll">
-  <div class="board" id="board"></div>
+<div class="gantt-view" id="ganttView">
+  <div class="gantt-progress" id="ganttProgress"></div>
+  <div class="gantt-nodate" id="ganttNoDate"></div>
+  <div class="gantt-scroll" id="ganttScroll">
+    <div class="gantt-inner" id="ganttInner"></div>
+  </div>
 </div>
 
 <div class="tasks-view" id="tasksView" hidden></div>
-<div class="graph-view" id="graphView" hidden>
-  <div class="graph-toolbar">
-    <span class="graph-legend"><span class="lg-arrow open"></span> offener Blocker</span>
-    <span class="graph-legend"><span class="lg-arrow done"></span> erledigt</span>
-    <span class="graph-hint">Pfeil: A → B bedeutet „A blockiert B". Knoten anklicken öffnet das Ticket.</span>
-    <button class="btn" id="btnGraphFit" title="Ansicht zurücksetzen">Zentrieren</button>
-  </div>
-  <svg id="graphSvg" class="graph-svg"></svg>
-</div>
+
 
 <!-- Ticket-Dialog -->
 <div class="overlay" id="overlay">
@@ -737,9 +821,17 @@
     </div>
 
     <div class="meta-grid meta-top">
-      <div class="mfield" id="fldPhase">
-        <label>Phase</label>
-        <div class="msel" id="mselPhase">
+      <div class="mfield">
+        <label>Start</label>
+        <input type="date" class="mdate" id="fStart">
+      </div>
+      <div class="mfield">
+        <label>Ende</label>
+        <input type="date" class="mdate" id="fEnd">
+      </div>
+      <div class="mfield">
+        <label>Priorität</label>
+        <div class="msel" id="mselPrio">
           <button type="button" class="msel-trigger"><span class="msel-vals"></span><span class="msel-caret">▼</span></button>
           <div class="msel-panel"></div>
         </div>
@@ -754,13 +846,6 @@
       <div class="mfield">
         <label>Stakeholder</label>
         <div class="msel" id="mselStakeholder">
-          <button type="button" class="msel-trigger"><span class="msel-vals"></span><span class="msel-caret">▼</span></button>
-          <div class="msel-panel"></div>
-        </div>
-      </div>
-      <div class="mfield">
-        <label>Tags</label>
-        <div class="msel" id="mselTags">
           <button type="button" class="msel-trigger"><span class="msel-vals"></span><span class="msel-caret">▼</span></button>
           <div class="msel-panel"></div>
         </div>
@@ -781,8 +866,7 @@
           <div class="collapse-label" id="goalHead">
             <span class="goal-pin">📌</span>
             <label>Ziel / Aufgabe</label>
-            <span class="goal-tag">Vorgabe</span>
-            <button type="button" class="goal-collapse" id="goalToggle" title="Ziel-Spalte einklappen">Einklappen ›</button>
+            <button type="button" class="goal-collapse" id="goalToggle" title="Ziel-Spalte einklappen">›</button>
           </div>
           <div class="rte-wrap" data-rte="goal">
             <div class="rte-bar"></div>
@@ -979,7 +1063,7 @@ const joinOwners  = a => (a||[]).join(", ");
 const splitOwners = s => String(s||"").split(",").map(x=>x.trim()).filter(Boolean);
 
 function ticketToRow(t){
-  return { id:t.id, title:t.title||"", goal:t.goal||"", description:t.desc||"", phaseId:t.phaseId||"", status:t.status||DEFAULT_STATUS, owners:joinOwners(t.owners), tags:joinOwners(t.tags), stakeholder:t.stakeholder||"", blocked_by:Array.isArray(t.blockedBy)?t.blockedBy.join(", "):(t.blockedBy||""), created:t.created||"", updated:t.updated||"" };
+  return { id:t.id, title:t.title||"", goal:t.goal||"", description:t.desc||"", start:t.start||"", end:t.end||"", prio:t.prio||"", status:t.status||DEFAULT_STATUS, owners:joinOwners(t.owners), tags:joinOwners(t.tags), stakeholder:t.stakeholder||"", blocked_by:Array.isArray(t.blockedBy)?t.blockedBy.join(", "):(t.blockedBy||""), created:t.created||"", updated:t.updated||"" };
 }
 function subToRow(s, ticketId){
   return { subtask_id:s.id, ticket_id:ticketId, title:s.text||"", done:bool(s.done), pos:(s.pos!=null?s.pos:0), owners:joinOwners(s.owners) };
@@ -1256,7 +1340,9 @@ async function loadFromSheet(){
     if(ticketSeen.has(id)){ ticketDup.push({ id, title:r.title||"" }); return; }
     ticketSeen.add(id);
     tickets.push({
-      id, title:r.title||"", goal:r.goal||"", desc:r.description||"", phaseId:String(r.phaseId||""),
+      id, title:r.title||"", goal:r.goal||"", desc:r.description||"",
+      start:String(r.start||"").trim(), end:String(r.end||"").trim(),
+      prio: PRIO_MIGRATION[String(r.prio||"").trim()] || "",
       status: STATUS_MIGRATION[String(r.status||"").trim()] || DEFAULT_STATUS, owners:splitOwners(r.owners), tags:splitOwners(r.tags), stakeholder:String(r.stakeholder||"").trim(),
       blockedBy: String(r.blocked_by||"").split(",").map(s=>s.trim()).filter(Boolean),
       created:String(r.created||"").trim(), updated:String(r.updated||"").trim(),
@@ -1383,22 +1469,31 @@ function changeStatus(id, status){
 
 
 /* ===================== STATE ===================== */
-const STATUSES = ["Backlog","Next","Ongoing","Done"];
-const STATUS_LABEL = { Backlog:"Backlog", Next:"Als Nächstes", Ongoing:"In Arbeit", Done:"Erledigt" };
-const DEFAULT_STATUS = "Backlog";
-// Alte Status auf neue abbilden (für bestehende Sheet-Daten, bis manuell umgestellt)
-const STATUS_MIGRATION = { Open:"Backlog", Blocked:"Ongoing", Backlog:"Backlog", Next:"Next", "Als Nächstes":"Next", Ongoing:"Ongoing", Done:"Done", "In Arbeit":"Ongoing", "Erledigt":"Done" };
+const STATUSES = ["Ongoing","Done"];
+const STATUS_LABEL = { Ongoing:"In Arbeit", Done:"Erledigt" };
+const DEFAULT_STATUS = "Ongoing";
+// Alte Status auf neue abbilden (Backlog/Next werden zu "In Arbeit")
+const STATUS_MIGRATION = { Open:"Ongoing", Blocked:"Ongoing", Backlog:"Ongoing", Next:"Ongoing", "Als Nächstes":"Ongoing", Ongoing:"Ongoing", Done:"Done", "In Arbeit":"Ongoing", "Erledigt":"Done", Geplant:"Ongoing" };
+// Priorität
+const PRIOS = ["Hoch","Mittel","Niedrig"];
+const PRIO_COLOR = { Hoch:"#E5484D", Mittel:"#E0A100", Niedrig:"#2FA84F" };
+const PRIO_MIGRATION = { Hoch:"Hoch", Mittel:"Mittel", Niedrig:"Niedrig", High:"Hoch", Medium:"Mittel", Low:"Niedrig", "":"" };
+const PRIO_RANG = { Hoch:0, Mittel:1, Niedrig:2, "":3 };
 let phases = [], owners = [], tickets = [], tags = [];
 let ownerFilter = new Set();
 let statusFilter = new Set();
 let tagFilter = new Set();
+let prioFilter = new Set();
 let searchQuery = "";
-let collapsed = new Set(); // "phaseId|status"
+let collapsed = new Set();
 let focusMode = false;
 let editing = null;
 let editSnapshot = null; // Stand des Tickets beim Öffnen (fürs Diffen beim Speichern)
 let dataWarnung = null;  // Hinweistext bei Sheet-Problemen (doppelte IDs o.Ä.)
-let viewMode = "board";  // "board" | "tasks"
+let ganttUnit = "day";   // "day" | "week"
+let ganttGroup = "none"; // "none" | "owner"
+let ganttLinks = true;   // Verbindungslinien anzeigen
+let viewMode = "gantt";  // "gantt" | "tasks" | "graph"
 let taskOwner = null;    // in der Aufgabenliste gewählter Owner (null = alle)
 
 const $ = s => document.querySelector(s);
@@ -1420,15 +1515,17 @@ function loadDemo(){
     { name:"Recht",    color:"#d64828" },
     { name:"Wichtig",  color:"#E0A100" },
   ];
+  const dISO = n => { const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()+n); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
   tickets = [
-    { id:"T1", phaseId:"P1", title:"Erste Referenzkunden identifizieren", goal:"5 qualifizierte Referenzkunden für die Land-Phase gewinnen.", desc:"Longlist der Care-Betreiber nach Region & Größe.", status:"Ongoing", owners:["Tom","Margarita"], tags:["Vertrieb","Wichtig"], stakeholder:"Jasper",
+    { id:"T1", title:"Erste Referenzkunden identifizieren", goal:"5 qualifizierte Referenzkunden für die Land-Phase gewinnen.", desc:"Longlist der Care-Betreiber nach Region & Größe.", start:dISO(-3), end:dISO(4), prio:"Hoch", status:"Ongoing", owners:["Tom","Margarita"], tags:["Vertrieb","Wichtig"], stakeholder:"Jasper",
       created: demoTs(-1), updated: demoTs(-1),
       subtasks:[{id:"s1",text:"PLZ-Cluster ziehen",done:true,pos:10,owners:["Tom"]},{id:"s2",text:"Größenklassen bilden",done:false,pos:20,owners:[]}],
       updates:[{id:"u1",author:"Tom",ts:"2026-01-08 09:12",text:"Erste 40 Betreiber im Sheet."}] },
-    { id:"T2", phaseId:"P1", title:"Pilot-Vertrag Vorlage", goal:"Standardvertrag, den Vertrieb ohne Legal-Rückfrage nutzen kann.", desc:"Rechtlich freigegebene Vorlage für Land-Phase.", status:"Next", owners:["Benjamin"], tags:["Recht"], blockedBy:["T3"], created: demoTs(-40), updated: demoTs(-2), subtasks:[], updates:[] },
-    { id:"T3", phaseId:"P1", title:"CRM-Objekt anlegen", goal:"Land-Deals sauber im CRM abbildbar machen.", desc:"Salesforce Custom Object für Land-Deals.", status:"Done", owners:["Tom"], tags:["Technik"], created: demoTs(-50), updated: demoTs(-30), subtasks:[], updates:[] },
-    { id:"T4", phaseId:"P2", title:"ROI-Nachweis erstellen", goal:"Belastbaren ROI-Case für die Expand-Entscheidung liefern.", desc:"Belastbare Zahlen aus Pilot.", status:"Backlog", owners:["Tom","Jasper"], tags:[], blockedBy:["T2"], created: demoTs(-40), updated: demoTs(-40),
+    { id:"T2", title:"Kickoff-Meeting", goal:"Projektstart offiziell machen.", desc:"Alle Stakeholder an einen Tisch.", start:dISO(2), end:dISO(2), prio:"Mittel", status:"Ongoing", owners:["Benjamin"], tags:[], blockedBy:[], created: demoTs(-40), updated: demoTs(-2), subtasks:[], updates:[] },
+    { id:"T3", title:"CRM-Objekt anlegen", goal:"Land-Deals sauber im CRM abbildbar machen.", desc:"Salesforce Custom Object für Land-Deals.", start:dISO(-6), end:dISO(-1), prio:"Hoch", status:"Done", owners:["Tom"], tags:["Technik"], created: demoTs(-50), updated: demoTs(-30), subtasks:[], updates:[] },
+    { id:"T4", title:"ROI-Nachweis erstellen", goal:"Belastbaren ROI-Case für die Expand-Entscheidung liefern.", desc:"Belastbare Zahlen aus Pilot.", start:dISO(6), end:dISO(16), prio:"Niedrig", status:"Backlog", owners:["Tom","Jasper"], tags:[], blockedBy:["T2"], created: demoTs(-40), updated: demoTs(-40),
       subtasks:[{id:"s4a",text:"Kostendaten sammeln",done:false,pos:10,owners:["Jasper"]},{id:"s4b",text:"Nutzenmodell rechnen",done:false,pos:20,owners:["Tom"]}], updates:[] },
+    { id:"T5", title:"Onboarding-Flow skizzieren", goal:"", desc:"Noch nicht terminiert.", start:"", end:"", prio:"Mittel", status:"Backlog", owners:["Margarita"], tags:["Vertrieb"], created: demoTs(-5), updated: demoTs(-5), subtasks:[], updates:[] },
   ];
 }
 async function load(){
@@ -1472,53 +1569,52 @@ function renderDropdowns(){
   });
   const c2=document.createElement("button"); c2.className="dd-clear"; c2.textContent="Alle";
   c2.onclick=()=>{ statusFilter.clear(); syncDropdowns(); renderCurrentView(); }; sp.appendChild(c2);
-  // Tags
-  const tp = $("#ddTagPanel"); tp.innerHTML = "";
-  if(!tags.length){ tp.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:6px 8px;">Keine Tags</div>`; }
-  tags.forEach(tag => {
+  // Priorität
+  const pp = $("#ddPrioPanel"); pp.innerHTML = "";
+  PRIOS.forEach(pr => {
     const r = document.createElement("div");
-    r.className = "dd-opt" + (tagFilter.has(tag.name)?" sel":"");
-    r.innerHTML = `<span class="box" style="border-color:${tag.color||"var(--muted)"};"></span>${esc(tag.name)}`;
-    r.onclick = () => { tagFilter.has(tag.name)?tagFilter.delete(tag.name):tagFilter.add(tag.name); syncDropdowns(); renderCurrentView(); };
-    tp.appendChild(r);
+    r.className = "dd-opt" + (prioFilter.has(pr)?" sel":"");
+    r.innerHTML = `<span class="box" style="border-color:${PRIO_COLOR[pr]};"></span>${pr}`;
+    r.onclick = () => { prioFilter.has(pr)?prioFilter.delete(pr):prioFilter.add(pr); syncDropdowns(); renderCurrentView(); };
+    pp.appendChild(r);
   });
-  if(tags.length){ const c3=document.createElement("button"); c3.className="dd-clear"; c3.textContent="Alle";
-    c3.onclick=()=>{ tagFilter.clear(); syncDropdowns(); renderCurrentView(); }; tp.appendChild(c3); }
+  const c4=document.createElement("button"); c4.className="dd-clear"; c4.textContent="Alle";
+  c4.onclick=()=>{ prioFilter.clear(); syncDropdowns(); renderCurrentView(); }; pp.appendChild(c4);
   syncDropdowns();
 }
 function syncDropdowns(){
-  const ob = $("#ddOwnerBtn"), sb = $("#ddStatusBtn"), tb = $("#ddTagBtn");
+  const ob = $("#ddOwnerBtn"), sb = $("#ddStatusBtn");
   ob.className = "dd-trigger" + (ownerFilter.size?" has":"");
   ob.innerHTML = `Owner${ownerFilter.size?` <span class="cnt">${ownerFilter.size}</span>`:""} <span class="caret">▼</span>`;
   sb.className = "dd-trigger" + (statusFilter.size?" has":"");
   sb.innerHTML = `Status${statusFilter.size?` <span class="cnt">${statusFilter.size}</span>`:""} <span class="caret">▼</span>`;
-  tb.className = "dd-trigger" + (tagFilter.size?" has":"");
-  tb.innerHTML = `Tags${tagFilter.size?` <span class="cnt">${tagFilter.size}</span>`:""} <span class="caret">▼</span>`;
+  const pb = $("#ddPrioBtn");
+  pb.className = "dd-trigger" + (prioFilter.size?" has":"");
+  pb.innerHTML = `Priorität${prioFilter.size?` <span class="cnt">${prioFilter.size}</span>`:""} <span class="caret">▼</span>`;
   [...$("#ddOwnerPanel").children].forEach(r=>{ if(r.classList.contains("dd-opt")) r.classList.toggle("sel", ownerFilter.has(r.textContent)); });
   [...$("#ddStatusPanel").children].forEach(r=>{ if(r.classList.contains("dd-opt")) r.classList.toggle("sel", statusFilter.has(r.textContent)); });
-  [...$("#ddTagPanel").children].forEach(r=>{ if(r.classList.contains("dd-opt")) r.classList.toggle("sel", tagFilter.has(r.textContent)); });
+  [...$("#ddPrioPanel").children].forEach(r=>{ if(r.classList.contains("dd-opt")) r.classList.toggle("sel", prioFilter.has(r.textContent)); });
 }
 function toggleDD(which){
-  const o=$("#ddOwnerPanel"), s=$("#ddStatusPanel"), t=$("#ddTagPanel");
-  o.classList.remove("open"); s.classList.remove("open"); t.classList.remove("open");
-  if(which==="owner") o.classList.toggle("open");
-  else if(which==="status") s.classList.toggle("open");
-  else t.classList.toggle("open");
+  const o=$("#ddOwnerPanel"), s=$("#ddStatusPanel"), p=$("#ddPrioPanel");
+  [o,s,p].forEach(x=>{ if(x) x.classList.remove("open"); });
+  const map = { owner:o, status:s, prio:p };
+  if(map[which]) map[which].classList.toggle("open");
 }
 $("#ddOwnerBtn").onclick = e => { e.stopPropagation(); toggleDD("owner"); };
 $("#ddStatusBtn").onclick = e => { e.stopPropagation(); toggleDD("status"); };
-$("#ddTagBtn").onclick = e => { e.stopPropagation(); toggleDD("tag"); };
-document.addEventListener("click", () => { $("#ddOwnerPanel").classList.remove("open"); $("#ddStatusPanel").classList.remove("open"); $("#ddTagPanel").classList.remove("open"); $("#ddViewPanel")?.classList.remove("open"); closeAllSubPanels(); closeAllMsel(); });
+$("#ddPrioBtn").onclick = e => { e.stopPropagation(); toggleDD("prio"); };
+document.addEventListener("click", () => { $("#ddOwnerPanel").classList.remove("open"); $("#ddStatusPanel").classList.remove("open"); $("#ddPrioPanel")?.classList.remove("open"); $("#ddViewPanel")?.classList.remove("open"); closeAllSubPanels(); closeAllMsel(); });
 $("#ddOwnerPanel").addEventListener("click", e=>e.stopPropagation());
 $("#ddStatusPanel").addEventListener("click", e=>e.stopPropagation());
-$("#ddTagPanel").addEventListener("click", e=>e.stopPropagation());
+$("#ddPrioPanel").addEventListener("click", e=>e.stopPropagation());
 
 $("#search").addEventListener("input", e => { searchQuery = e.target.value.trim().toLowerCase(); renderCurrentView(); });
 
 function passesFilter(t){
   if(ownerFilter.size && !t.owners.some(o=>ownerFilter.has(o))) return false;
   if(statusFilter.size && !statusFilter.has(t.status)) return false;
-  if(tagFilter.size && !(t.tags||[]).some(tg=>tagFilter.has(tg))) return false;
+  if(prioFilter.size && !prioFilter.has(t.prio||"")) return false;
   if(searchQuery){
     const hay = (t.title+" "+t.desc).toLowerCase();
     if(!hay.includes(searchQuery)) return false;
@@ -1526,34 +1622,46 @@ function passesFilter(t){
   return true;
 }
 
-/* ===================== BOARD ===================== */
+/* ===================== DATUMS-HELFER ===================== */
+const MS_TAG = 86400000;
+function parseDate(s){ // "YYYY-MM-DD" -> Date (lokale Mitternacht) oder null
+  if(!s) return null;
+  const m = String(s).trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(!m) return null;
+  return new Date(+m[1], +m[2]-1, +m[3]);
+}
+function fmtISO(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
+function tageZwischen(a, b){ return Math.round((b - a) / MS_TAG); }
+function addTage(d, n){ return new Date(d.getTime() + n*MS_TAG); }
+function startOfWeek(d){ const x = new Date(d); const wd = (x.getDay()+6)%7; return addTage(x, -wd); } // Montag
+function hatDatum(t){ return !!(parseDate(t.start) && parseDate(t.end)); }
+const MONATE = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
+const WOCHENTAG = ["Mo","Di","Mi","Do","Fr","Sa","So"];
+
+/* ===================== BOARD (alt, wird durch Gantt ersetzt) ===================== */
 function phaseVisibleInFocus(ph, actId){
   const today = new Date().toISOString().slice(0,10);
-  if(ph.start > today) return false;          // Phase startet erst in der Zukunft → im Fokus irrelevant
-  if(ph.id===actId) return true;              // aktive Phase immer zeigen
-  // Vergangene/laufende Phase mit offenen oder blockierten Tickets (respektiert aktive Filter)
+  if(ph.start > today) return false;
+  if(ph.id===actId) return true;
   return tickets.some(t => t.phaseId===ph.id && t.status!=="Done" && passesFilter(t));
 }
 
-/* ===================== ANSICHT: BOARD / AUFGABEN ===================== */
+/* ===================== ANSICHT: GANTT / AUFGABEN / GRAPH ===================== */
 function setView(mode){
   viewMode = mode;
-  const boardScroll = $("#boardScroll"), tasksView = $("#tasksView"), graphView = $("#graphView");
-  const btnFocus = $("#btnFocus");
-  boardScroll.hidden = (mode !== "board");
-  tasksView.hidden   = (mode !== "tasks");
-  graphView.hidden   = (mode !== "graph");
-  const labels = { board:"Board", tasks:"Aufgaben", graph:"Abhängigkeiten" };
-  $("#ddViewBtn").innerHTML = `Ansicht: ${labels[mode]} <span class="caret">▼</span>`;
+  const ganttView = $("#ganttView"), tasksView = $("#tasksView");
+  ganttView.hidden = (mode !== "gantt");
+  tasksView.hidden = (mode !== "tasks");
+  $("#ganttControls")?.classList.toggle("hidden", mode !== "gantt");
+  const labels = { gantt:"Gantt", tasks:"Aufgaben" };
+  $("#ddViewBtn").innerHTML = `Ansicht: ${labels[mode]||"Gantt"} <span class="caret">▼</span>`;
   [...$("#ddViewPanel").children].forEach(r => r.classList.toggle("sel", r.dataset.view === mode));
-  if(btnFocus) btnFocus.style.display = (mode === "board") ? "" : "none";
   if(mode === "tasks") renderTasks();
-  else if(mode === "graph") renderGraph();
-  else renderBoard();
+  else renderGantt();
 }
 
-// Phase-Name für ein Ticket (für die Kontextzeile in der Aufgabenliste)
-function phaseName(id){ const p = phases.find(x=>x.id===id); return p ? p.name : ""; }
+// (phaseName bleibt als No-op-Fallback, falls noch referenziert)
+function phaseName(id){ return ""; }
 
 // Baut die Aufgaben-Datenstruktur: pro Owner alle offenen Tickets + offenen Subtasks.
 // "Offen" = Ticket-Status Open oder Blocked (nicht Done); Subtask nicht erledigt.
@@ -1563,7 +1671,7 @@ function sammleAufgaben(){
 
   tickets.forEach(t => {
     // Nur relevante Aufgaben: aktiv in Arbeit oder als Nächstes geplant
-    if(t.status !== "Ongoing" && t.status !== "Next") return;
+    if(t.status !== "Ongoing") return;   // nur laufende Aufgaben
     if(!passesFilter(t)) return;                  // aktive Board-Filter/Suche respektieren
     // Ticket selbst als Aufgabe je Owner
     (t.owners.length ? t.owners : ["(ohne Owner)"]).forEach(o => ensure(o).tickets.push(t));
@@ -1589,7 +1697,7 @@ function renderTasks(){
   // Hinweis: welche Aufgaben hier landen
   const info = document.createElement("div");
   info.className = "task-info";
-  info.textContent = "Zeigt nur Aufgaben mit Status „In Arbeit“ oder „Als Nächstes“.";
+  info.textContent = "Zeigt nur laufende Aufgaben (Status „In Arbeit“).";
   root.appendChild(info);
 
   // Owner-Chips zum Filtern
@@ -1706,98 +1814,403 @@ function toggleSubtaskDone(ticketId, subId){
   renderTasks();
 }
 
-function renderBoard(){
-  const board = $("#board"); board.innerHTML = "";
-  const actId = activePhaseId();
-  let visible = phases;
-  if(focusMode) visible = phases.filter(ph => phaseVisibleInFocus(ph, actId));
-  if(focusMode && visible.length===0){
-    board.innerHTML = `<div style="color:var(--muted);font-size:14px;padding:8px 2px;">Keine Phase mit offenen oder blockierten Tickets. 🎉</div>`;
+/* ===================== GANTT ===================== */
+let ganttState = { start:null, end:null, pxProTag:0, drag:null };
+
+function renderGesamtfortschritt(liste){
+  const el = $("#ganttProgress"); if(!el) return;
+  const gesamt = liste.length;
+  if(!gesamt){ el.style.display = "none"; return; }
+  el.style.display = "flex";
+  const done = liste.filter(t => t.status === "Done").length;
+  const heute = new Date(); heute.setHours(0,0,0,0);
+  const ueberfaellig = liste.filter(t => t.status !== "Done" && parseDate(t.end) && parseDate(t.end) < heute).length;
+  const pct = Math.round(done / gesamt * 100);
+  el.innerHTML = `
+    <span class="gp-text"><b>${pct}%</b> erledigt</span>
+    <div class="gp-bar-wrap"><div class="gp-bar-fill" style="width:${pct}%"></div></div>
+    <span class="gp-stats">
+      <span>${done}/${gesamt} Tickets</span>
+      ${ueberfaellig?`<span class="st-over">⚠ ${ueberfaellig} überfällig</span>`:""}
+    </span>`;
+}
+
+function renderGantt(){
+  const inner = $("#ganttInner");
+  const noDateWrap = $("#ganttNoDate");
+  if(!inner) return;
+
+  const sichtbar = tickets.filter(passesFilter);
+  const mitDatum = sichtbar.filter(hatDatum);
+  const ohneDatum = sichtbar.filter(t => !hatDatum(t));
+
+  // Gesamtfortschritt (alle sichtbaren Tickets)
+  renderGesamtfortschritt(sichtbar);
+
+  // "Ohne Datum"-Liste oben
+  if(ohneDatum.length){
+    noDateWrap.style.display = "";
+    noDateWrap.innerHTML = `<div class="nd-head">Ohne Datum (${ohneDatum.length}) — zum Einplanen anklicken</div>`;
+    const wrap = document.createElement("div"); wrap.className = "nd-list";
+    ohneDatum.forEach(t => {
+      const chip = document.createElement("button");
+      chip.className = "nd-chip";
+      chip.innerHTML = `${t.prio?`<span class="nd-prio" style="background:${PRIO_COLOR[t.prio]||'var(--muted-hell)'}"></span>`:""}${esc(t.title||t.id)}`;
+      chip.onclick = () => openTicket(t.id);
+      wrap.appendChild(chip);
+    });
+    noDateWrap.appendChild(wrap);
+  } else {
+    noDateWrap.style.display = "none";
+    noDateWrap.innerHTML = "";
+  }
+
+  if(!mitDatum.length){
+    inner.innerHTML = `<div style="color:var(--muted);font-size:14px;padding:20px 4px;">Keine terminierten Tickets. Trage bei einem Ticket Start- und Enddatum ein${ohneDatum.length?" — z.B. aus der Liste oben":""}.</div>`;
     return;
   }
 
-  visible.forEach((ph, idx) => {
-    const col = document.createElement("div");
-    col.className = "phase" + (ph.id===actId ? " aktiv" : "");
-
-    const head = document.createElement("div");
-    head.className = "phase-head" + (ph.desc ? " has-desc" : "");
-    const nowMarker = (ph.id===actId) ? `<span class="phase-now">Aktuell</span>` : "";
-    const caret = ph.desc ? `<span class="phase-caret">▾</span>` : "";
-    head.innerHTML = `<div class="phase-name">${esc(ph.name)}${caret}${nowMarker}</div>
-      <div class="phase-dates">${fmtDate(ph.start)} – ${fmtDate(ph.end)}</div>
-      ${ph.desc ? `<div class="phase-desc">${mdToHtml(ph.desc)}</div>` : ""}`;
-    col.appendChild(head);
-
-    const body = document.createElement("div");
-    body.className = "phase-body";
-    STATUSES.forEach((st, i) => {
-      body.appendChild(renderLane(ph, st));
-      // Fluss-Pfeil zwischen den Reihen (nicht nach der letzten)
-      if(i < STATUSES.length - 1){
-        const flow = document.createElement("div");
-        flow.className = "lane-flow";
-        flow.innerHTML = `<span>↓</span>`;
-        flow.setAttribute("aria-hidden", "true");
-        body.appendChild(flow);
-      }
-    });
-    col.appendChild(body);
-    board.appendChild(col);
+  // Zeitfenster bestimmen (mit etwas Rand)
+  let minD = null, maxD = null;
+  mitDatum.forEach(t => {
+    const s = parseDate(t.start), e = parseDate(t.end);
+    if(!minD || s < minD) minD = s;
+    if(!maxD || e > maxD) maxD = e;
   });
-}
+  const heute = new Date(); heute.setHours(0,0,0,0);
+  if(heute < minD) minD = heute;
+  if(heute > maxD) maxD = heute;
 
-function renderLane(ph, status){
-  const items = tickets.filter(t => t.phaseId===ph.id && t.status===status && passesFilter(t));
-  const key = ph.id+"|"+status;
-  const isCol = collapsed.has(key);
-  const lane = document.createElement("div");
-  lane.className = "lane lane-" + status.toLowerCase() + (isCol?" collapsed":"");
+  const woche = ganttUnit === "week";
+  // Raster auf Wochenanfang/Tagesanfang ausrichten, Rand ergänzen
+  let start = woche ? startOfWeek(minD) : addTage(minD, -2);
+  let end   = woche ? addTage(startOfWeek(maxD), 13) : addTage(maxD, 3);
+  const tage = tageZwischen(start, end) + 1;
+  const pxProTag = woche ? 26 : 34;
+  const rowH = 40, labelW = 210;
 
-  const label = document.createElement("div");
-  label.className = "lane-label";
-  label.innerHTML = `<span class="arw">▼</span>${STATUS_LABEL[status]} <span class="cnt">${items.length}</span>`;
-  label.onclick = () => { isCol ? collapsed.delete(key) : collapsed.add(key); renderBoard(); };
-  lane.appendChild(label);
+  ganttState = { start, end, pxProTag, labelW, rowH };
 
-  const drop = document.createElement("div");
-  drop.className = "lane-drop";
-  drop.dataset.phase = ph.id; drop.dataset.status = status;
+  // Sortierung: nach Startdatum, dann Prio
+  const sortTickets = arr => arr.slice().sort((a,b) => {
+    const sa = parseDate(a.start)-parseDate(b.start);
+    if(sa) return sa;
+    return (PRIO_RANG[a.prio||""] - PRIO_RANG[b.prio||""]);
+  });
 
-  drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("dragover"); });
-  drop.addEventListener("dragleave", () => drop.classList.remove("dragover"));
-  drop.addEventListener("drop", e => {
-    e.preventDefault(); drop.classList.remove("dragover");
-    const id = e.dataTransfer.getData("text/plain");
-    const t = tickets.find(x=>x.id===id);
-    if(t){
-      t.status = status; t.phaseId = ph.id;
-      t.updated = jetztTs();
-      if(backendConfigured()) enqueue("Verschoben: " + (t.title||""), [ opUpdate(TAB_TICKETS, "id", id, ticketToRow(t)) ]);
-      renderBoard();
+  // Zeilen-Liste bauen: entweder flach oder nach Owner gruppiert
+  const zeilen = [];  // {typ:"ticket", t} | {typ:"gruppe", name}
+  if(ganttGroup === "owner"){
+    // Jedes Ticket erscheint unter jedem seiner Owner (oder "Ohne Owner")
+    const proOwner = {};
+    mitDatum.forEach(t => {
+      const os = (t.owners && t.owners.length) ? t.owners : ["Ohne Owner"];
+      os.forEach(o => { (proOwner[o] = proOwner[o] || []).push(t); });
+    });
+    Object.keys(proOwner).sort((a,b) => a==="Ohne Owner"?1:b==="Ohne Owner"?-1:a.localeCompare(b)).forEach(o => {
+      zeilen.push({ typ:"gruppe", name:o, anzahl:proOwner[o].length });
+      sortTickets(proOwner[o]).forEach(t => zeilen.push({ typ:"ticket", t }));
+    });
+  } else {
+    sortTickets(mitDatum).forEach(t => zeilen.push({ typ:"ticket", t }));
+  }
+
+  const breite = labelW + tage * pxProTag;
+  const hoehe = 40 + zeilen.length * rowH + 10;
+
+  // Kopf-Zeitachse (Ticks = sticky-Kopf, Grid = volle Höhe im Hintergrund)
+  const heuteX = labelW + tageZwischen(start, heute) * pxProTag;
+  let achse = "", grid = "";
+  if(woche){
+    for(let d = new Date(start); d <= end; d = addTage(d, 7)){
+      const x = labelW + tageZwischen(start, d) * pxProTag;
+      const kw = kalenderwoche(d);
+      achse += `<div class="g-tick" style="left:${x}px">KW ${kw}<span class="g-tick-sub">${d.getDate()}.${d.getMonth()+1}</span></div>`;
+      grid  += `<div class="g-grid" style="left:${x}px;height:${hoehe}px"></div>`;
+    }
+  } else {
+    for(let d = new Date(start); d <= end; d = addTage(d, 1)){
+      const x = labelW + tageZwischen(start, d) * pxProTag;
+      const we = (d.getDay()===0 || d.getDay()===6);
+      const monatsanfang = d.getDate()===1;
+      achse += `<div class="g-tick ${we?'we':''}" style="left:${x}px">${WOCHENTAG[(d.getDay()+6)%7]}<span class="g-tick-sub">${d.getDate()}.${monatsanfang?` ${MONATE[d.getMonth()]}`:""}</span></div>`;
+      grid  += `<div class="g-grid ${we?'we':''}" style="left:${x}px;height:${hoehe}px"></div>`;
+    }
+  }
+
+  // Balken
+  let balken = "";
+  const pos = {};  // id -> {x, y, w, mid} für Verbindungslinien (erste Position bei Mehrfach)
+  zeilen.forEach((z, i) => {
+    const y = 40 + i * rowH;
+    if(z.typ === "gruppe"){
+      balken += `
+        <div class="g-row g-grouprow" style="top:${y}px;height:${rowH}px">
+          <div class="g-grouplabel" style="width:${labelW}px">${esc(z.name)} <span class="gl-count">${z.anzahl}</span></div>
+        </div>`;
+      return;
+    }
+    const t = z.t;
+    const s = parseDate(t.start), e = parseDate(t.end);
+    const x = labelW + tageZwischen(start, s) * pxProTag;
+    const w = Math.max(pxProTag*0.8, (tageZwischen(s, e)+1) * pxProTag);
+    const farbe = PRIO_COLOR[t.prio] || "var(--muted-hell)";
+    const blk = istBlockiert(t);
+    const done = t.status === "Done";
+    const dauer = tageZwischen(s, e) + 1;
+    const meilenstein = dauer === 1;
+    const schmal = !meilenstein && w < 130;
+
+    let prog = 0;
+    if(done) prog = 100;
+    else {
+      const gesamt = (e - s) + MS_TAG;
+      const verstrichen = heute - s + MS_TAG;
+      prog = Math.max(0, Math.min(100, Math.round(verstrichen / gesamt * 100)));
+    }
+    const ueberfaellig = !done && e < heute;
+
+    const tip = `${t.title} · ${t.start}${meilenstein?"":` – ${t.end}`} (${meilenstein?"Meilenstein":`${dauer} Tage`})${t.prio?` · ${t.prio}`:""} · ${STATUS_LABEL[t.status]||t.status}${!done?` · ${prog}%`:""}`;
+    if(!pos[t.id]) pos[t.id] = { x, y: y+7+13, w: meilenstein?26:w, barTop:y+7, barBot:y+7+26, mid:y+7+13, rowIndex:i };
+
+    const rowLabel = `
+      <div class="g-row" style="top:${y}px;height:${rowH}px" data-goal-id="${esc(t.id)}">
+        <div class="g-rowlabel" style="width:${labelW}px" data-id="${esc(t.id)}" title="${esc(t.title)}">
+          <span class="g-prio" style="background:${farbe}" title="${esc(t.prio||'ohne Priorität')}"></span>
+          <span class="g-rowtitle">${esc(t.title||t.id)}</span>
+        </div>
+      </div>`;
+
+    if(meilenstein){
+      balken += rowLabel + `
+        <div class="g-milestone ${done?'done':''} ${ueberfaellig?'overdue':''}" data-id="${esc(t.id)}"
+             style="left:${x}px; top:${y+7}px" title="${esc(tip)}">
+          <span class="ms-diamond" style="background:${farbe}"></span>
+          <span class="ms-label">${esc(t.title||t.id)}</span>
+        </div>`;
+    } else {
+      balken += rowLabel + `
+        <div class="g-bar ${done?'done':''} ${blk?'blocked':''} ${schmal?'schmal':''} ${ueberfaellig?'overdue':''}" data-id="${esc(t.id)}"
+             style="left:${x}px; top:${y+7}px; width:${w}px" title="${esc(tip)}">
+          <span class="g-handle l"></span>
+          <span class="g-bar-prio" style="background:${farbe}"></span>
+          ${schmal ? "" : `<span class="g-bar-label">${esc(t.title||t.id)}</span><span class="g-bar-owners">${(t.owners||[]).map(initialen).join(" ")}</span>`}
+          <span class="g-handle r"></span>
+          ${schmal ? `<span class="g-bar-outside">${esc(t.title||t.id)}</span>` : ""}
+        </div>`;
     }
   });
 
-  if(items.length===0){
-    const e = document.createElement("div"); e.className="lane-empty"; e.textContent="—"; drop.appendChild(e);
-  } else items.forEach(t => drop.appendChild(renderCard(t)));
+  // Verbindungslinien: Blocker A -> blockiertes Ticket B ("A muss vor B fertig sein").
+  // Führung raus aus A (rechts, Mitte) -> vertikale Bahn -> Einlauf in B (links, Mitte).
+  // Die vertikale Bahn liegt rechts von A und links von B, damit sie keinen Balken quert.
+  let linien = "";
+  const RAD = 6;
+  if(ganttLinks) mitDatum.forEach(t => {
+    blockerListe(t).forEach(b => {
+      if(!pos[b.id] || !pos[t.id]) return;
+      const A = pos[b.id], B = pos[t.id];
+      const offen = b.status !== "Done";
+      const c = offen ? "var(--overdue)" : "var(--gr-done)";
+      const dash = offen ? "" : 'stroke-dasharray="5 4"';
+      const mark = `url(#gm-${offen?'o':'d'})`;
 
-  lane.appendChild(drop);
-  return lane;
+      const x1 = A.x + A.w, y1 = A.mid;   // rechte Kante Blocker
+      const x2 = B.x,       y2 = B.mid;   // linke Kante Ziel
+      const dir = y2 >= y1 ? 1 : -1;
+
+      // Vertikale Bahn möglichst in die Lücke zwischen A-Ende und B-Anfang legen.
+      // Ist da kein Platz (Ziel liegt links/überlappt), Bahn knapp rechts von A —
+      // dann läuft der Einlauf von rechts in B (Marker zeigt trotzdem nach links).
+      let d;
+      if(x2 - 14 > x1 + 14){
+        const bx = Math.round((x1 + x2) / 2);
+        const r = Math.min(RAD, Math.abs(y2 - y1)/2 || RAD);
+        d = `M ${x1} ${y1} L ${bx - r} ${y1} Q ${bx} ${y1} ${bx} ${y1 + dir*r}`
+          + ` L ${bx} ${y2 - dir*r} Q ${bx} ${y2} ${bx + r} ${y2} L ${x2 - 7} ${y2}`;
+      } else {
+        // Umweg: rechts aus A raus, hoch/runter, dann von links in B
+        const bx = x1 + 18;                 // Bahn rechts von A
+        const ex = Math.max(B.x - 18, 4);   // Einlaufpunkt links von B
+        const r = Math.min(RAD, Math.abs(y2 - y1)/2 || RAD);
+        d = `M ${x1} ${y1} L ${bx - r} ${y1} Q ${bx} ${y1} ${bx} ${y1 + dir*r}`
+          + ` L ${bx} ${y2 - dir*r} Q ${bx} ${y2} ${bx - r} ${y2} L ${x2 - 7} ${y2}`;
+      }
+      linien += `<path d="${d}" fill="none" stroke="${c}" stroke-width="1.6" ${dash} marker-end="${mark}" opacity="0.85" stroke-linejoin="round" stroke-linecap="round"/>`;
+    });
+  });
+
+  inner.style.width = breite + "px";
+  inner.style.height = hoehe + "px";
+  inner.innerHTML = `
+    <div class="g-gridlayer">${grid}</div>
+    <div class="g-today" style="left:${heuteX}px;height:${hoehe}px" title="Heute"></div>
+    <svg class="g-links" width="${breite}" height="${hoehe}" style="position:absolute;top:0;left:0;pointer-events:none;z-index:4;overflow:visible">
+      <defs>
+        <marker id="gm-o" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L8 4 L0 8 z" fill="var(--overdue)"/></marker>
+        <marker id="gm-d" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L8 4 L0 8 z" fill="var(--gr-done)"/></marker>
+      </defs>
+      ${linien}
+    </svg>
+    <div class="g-axis">${achse}</div>
+    <div class="g-corner" style="width:${labelW}px"></div>
+    ${balken}`;
+
+  bindGanttInteraction();
+  bindGoalPopover();
+
+  // Beim ersten Öffnen automatisch zu "heute" scrollen
+  if(!renderGantt._zentriert){
+    renderGantt._zentriert = true;
+    requestAnimationFrame(() => {
+      const sc = $("#ganttScroll");
+      if(sc && ganttState.start){
+        const hx = ganttState.labelW + tageZwischen(ganttState.start, heute) * ganttState.pxProTag;
+        sc.scrollLeft = Math.max(0, hx - sc.clientWidth/2);
+      }
+    });
+  }
 }
+
+// Hover über eine Gantt-Zeile zeigt das Ziel als Popover
+function bindGoalPopover(){
+  const scroll = $("#ganttScroll");
+  let pop = null;
+  function entferne(){ if(pop){ pop.remove(); pop = null; } }
+  function zeige(t, ankerLeft, ankerTop){
+    if(ganttState.drag) return;
+    entferne();
+    const dauer = (parseDate(t.start)&&parseDate(t.end)) ? tageZwischen(parseDate(t.start),parseDate(t.end))+1 : null;
+    const metaTeile = [];
+    if(t.start && t.end) metaTeile.push(`${t.start} – ${t.end}${dauer?` · ${dauer} Tag${dauer>1?"e":""}`:""}`);
+    if(t.prio) metaTeile.push(t.prio);
+    if(t.owners && t.owners.length) metaTeile.push(t.owners.join(", "));
+    if(t.status) metaTeile.push(STATUS_LABEL[t.status]||t.status);
+    const offen = offeneBlocker(t);
+    pop = document.createElement("div");
+    pop.className = "g-goal-pop";
+    pop.innerHTML = `
+      <div class="gp-head">${esc(t.title||t.id)}</div>
+      ${metaTeile.length?`<div class="gp-meta">${esc(metaTeile.join(" · "))}</div>`:""}
+      ${offen.length?`<div class="gp-block">⛔ blockiert von: ${esc(offen.map(b=>b.title||b.id).join(", "))}</div>`:""}
+      ${t.goal && t.goal.trim() ? `<div class="gp-title">📌 Ziel</div><div class="gp-goal">${mdToHtml(t.goal)}</div>` : ""}`;
+    $("#ganttInner").appendChild(pop);
+    // Position innerhalb des sichtbaren Bereichs halten
+    const scRect = scroll.getBoundingClientRect();
+    const maxLeft = scroll.scrollLeft + scRect.width - pop.offsetWidth - 12;
+    let left = Math.max(ganttState.labelW + 4, ankerLeft);
+    left = Math.min(left, Math.max(ganttState.labelW + 4, maxLeft));
+    pop.style.left = left + "px";
+    pop.style.top = (ankerTop + 30) + "px";
+    requestAnimationFrame(() => pop && pop.classList.add("show"));
+  }
+  const inner = $("#ganttInner");
+  inner.querySelectorAll(".g-bar").forEach(bar => {
+    const t = tickets.find(x => x.id === bar.dataset.id);
+    if(!t) return;
+    bar.addEventListener("mouseenter", () => zeige(t, parseFloat(bar.style.left)||0, parseFloat(bar.style.top)||0));
+    bar.addEventListener("mouseleave", entferne);
+    bar.addEventListener("mousedown", entferne);
+  });
+  // Auch über das Zeilen-Label (dort werden Titel abgeschnitten)
+  inner.querySelectorAll(".g-rowlabel").forEach(lbl => {
+    const t = tickets.find(x => x.id === lbl.dataset.id);
+    if(!t) return;
+    const row = lbl.closest(".g-row");
+    const top = row ? (parseFloat(row.style.top)||0) : 0;
+    lbl.addEventListener("mouseenter", () => zeige(t, ganttState.labelW + 4, top));
+    lbl.addEventListener("mouseleave", entferne);
+  });
+  if(scroll && !scroll._popClean){ scroll._popClean = true; scroll.addEventListener("scroll", entferne); }
+}
+
+function kalenderwoche(d){
+  const date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const day = (date.getDay()+6)%7;
+  date.setDate(date.getDate() - day + 3);
+  const firstThu = new Date(date.getFullYear(),0,4);
+  const diff = (date - firstThu) / MS_TAG;
+  return 1 + Math.round((diff - 3 + ((firstThu.getDay()+6)%7)) / 7);
+}
+
+// Balken öffnen (Klick) + ziehen (verschieben/Kanten)
+function bindGanttInteraction(){
+  const inner = $("#ganttInner");
+  // Zeilen-Label + Balken-Klick öffnet Ticket
+  inner.querySelectorAll(".g-rowlabel").forEach(el => {
+    el.onclick = () => openTicket(el.dataset.id);
+  });
+
+  // Balken UND Meilensteine ziehbar
+  inner.querySelectorAll(".g-bar, .g-milestone").forEach(el => {
+    const istMs = el.classList.contains("g-milestone");
+    el.addEventListener("mousedown", e => {
+      let modus = "move";
+      if(!istMs && e.target.classList.contains("g-handle")) modus = e.target.classList.contains("l") ? "l" : "r";
+      const id = el.dataset.id;
+      const t = tickets.find(x=>x.id===id);
+      if(!t) return;
+      ganttState.drag = {
+        id, modus, istMs, startX: e.clientX,
+        origStart: parseDate(t.start), origEnd: parseDate(t.end),
+        bar: el, moved:false
+      };
+      e.preventDefault(); e.stopPropagation();
+      document.body.style.userSelect = "none";
+    });
+    el.addEventListener("click", e => {
+      if(ganttState.drag && ganttState.drag.moved) return;
+      if(e.target.classList.contains("g-handle")) return;
+      openTicket(el.dataset.id);
+    });
+  });
+
+  if(!bindGanttInteraction._global){
+    bindGanttInteraction._global = true;
+    window.addEventListener("mousemove", e => {
+      const d = ganttState.drag; if(!d) return;
+      const dxTage = Math.round((e.clientX - d.startX) / ganttState.pxProTag);
+      if(dxTage === 0 && !d.moved) return;
+      d.moved = true;
+      let ns = new Date(d.origStart), ne = new Date(d.origEnd);
+      if(d.modus === "move"){ ns = addTage(d.origStart, dxTage); ne = addTage(d.origEnd, dxTage); }
+      else if(d.modus === "l"){ ns = addTage(d.origStart, dxTage); if(ns > ne) ns = new Date(ne); }
+      else if(d.modus === "r"){ ne = addTage(d.origEnd, dxTage); if(ne < ns) ne = new Date(ns); }
+      const x = ganttState.labelW + tageZwischen(ganttState.start, ns) * ganttState.pxProTag;
+      d.bar.style.left = x + "px";
+      if(!d.istMs){
+        const w = Math.max(ganttState.pxProTag*0.8, (tageZwischen(ns, ne)+1) * ganttState.pxProTag);
+        d.bar.style.width = w + "px";
+      }
+      d._ns = ns; d._ne = ne;
+    });
+    window.addEventListener("mouseup", () => {
+      const d = ganttState.drag; if(!d){ document.body.style.userSelect=""; return; }
+      ganttState.drag = null;
+      document.body.style.userSelect = "";
+      if(!d.moved || !d._ns) return;
+      const t = tickets.find(x=>x.id===d.id); if(!t) return;
+      t.start = fmtISO(d._ns); t.end = fmtISO(d._ne);
+      t.updated = jetztTs();
+      if(backendConfigured()) enqueue("Termin: " + (t.title||""), [ opUpdate(TAB_TICKETS, "id", t.id, ticketToRow(t)) ]);
+      renderGantt();
+    });
+  }
+}
+
+// alte Board-Funktionen (nicht mehr genutzt, aber referenzsicher)
+function renderBoard(){ renderGantt(); }
 
 // Wandelt "YYYY-MM-DD HH:MM" oder "YYYY-MM-DD" in einen Zeitstempel (ms) um.
 function tsToMs(s){
   if(!s) return 0;
   let t = String(s).trim();
-  // "2026-08-27 7:36" -> Stunde/Minute auf zwei Stellen bringen, Leerzeichen -> T
   const m = t.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{1,2}):(\d{2})/);
   if(m){ t = `${m[1]}T${String(m[2]).padStart(2,"0")}:${m[3]}`; }
   else { t = t.replace(" ", "T"); }
   const d = new Date(t);
   return isNaN(d.getTime()) ? 0 : d.getTime();
 }
-// Menschenlesbarer Abstand, z.B. "vor 2 Std", "vor 3 Tagen".
 function zeitHer(ms){
   if(!ms) return "";
   const diff = Date.now() - ms;
@@ -1809,14 +2222,14 @@ function zeitHer(ms){
   const mon = Math.floor(tag/30);
   return `vor ${mon} Monat${mon>1?"en":""}`;
 }
-const FRISCH_TAGE = 3;   // Fenster für "Neu"/"Aktualisiert"
+const FRISCH_TAGE = 3;
 function frischeBadge(t){
   const cMs = tsToMs(t.created), uMs = tsToMs(t.updated);
   const juengste = Math.max(cMs||0, uMs||0);
   if(!juengste) return "";
-  const grenze = Date.now() - 8*3600000;   // letzte 8 Stunden
+  const grenze = Date.now() - 8*3600000;
   if(juengste < grenze) return "";
-  const istNeu = cMs && cMs >= grenze && (!uMs || Math.abs(uMs - cMs) < 60000); // erstellt ≈ geändert -> neu
+  const istNeu = cMs && cMs >= grenze && (!uMs || Math.abs(uMs - cMs) < 60000);
   const titel = istNeu ? `Erstellt ${zeitHer(cMs)}` : `Aktualisiert ${zeitHer(juengste)}`;
   return `<span class="fresh-dot" title="${titel}"></span>`;
 }
@@ -1884,7 +2297,10 @@ function initialen(name){
 
 /* ===================== TICKET-DIALOG ===================== */
 function blankTicket(){
-  return { id:null, phaseId: phases[0]?.id||"", title:"", goal:"", desc:"", status:DEFAULT_STATUS, owners:[], tags:[], stakeholder:"", blockedBy:[], created:"", updated:"", subtasks:[], updates:[] };
+  const heute = new Date();
+  const inWoche = new Date(heute.getTime() + 6*86400000);
+  const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  return { id:null, title:"", goal:"", desc:"", start:fmt(heute), end:fmt(inWoche), prio:"Mittel", status:DEFAULT_STATUS, owners:[], tags:[], stakeholder:"", blockedBy:[], created:"", updated:"", subtasks:[], updates:[] };
 }
 function openTicket(id){
   editSnapshot = id ? snapshot(id) : null;
@@ -1897,15 +2313,13 @@ function openTicket(id){
 }
 function fillDialog(){
   $("#valMsg")?.classList.remove("show");
-  $("#mselPhase")?.classList.remove("invalid");
   $("#mselOwners")?.classList.remove("invalid");
   $("#fTitle").value = editing.title;
-  // RTE-Felder NUR beim Öffnen setzen — nicht bei jeder Auswahl, sonst würde
-  // getippter, noch nicht gespeicherter Text überschrieben.
+  // Datumsfelder (native date-Inputs)
+  $("#fStart").value = editing.start || "";
+  $("#fEnd").value = editing.end || "";
   rteSet($("#fGoal"), editing.goal);
   rteSet($("#fDesc"), editing.desc);
-  // Ziel-Spalte nur bei BESTEHENDEN Tickets ohne Ziel einklappen.
-  // Bei einem neuen Ticket bleibt sie offen, damit man das Ziel gleich eingeben kann.
   const istNeu = !editing.id;
   setGoalCollapsed(!istNeu && (!editing.goal || !editing.goal.trim()));
   if(!Array.isArray(editing.tags)) editing.tags = [];
@@ -1923,10 +2337,10 @@ function fillDialog(){
 function renderMetaFields(){
   if(!Array.isArray(editing.tags)) editing.tags = [];
   renderMsel({
-    id:"mselPhase", multi:false, placeholder:"Phase wählen …",
-    options: phases.map(p => ({ value:p.id, label:p.name })),
-    selected: () => editing.phaseId ? [editing.phaseId] : [],
-    toggle: v => { editing.phaseId = (editing.phaseId===v ? "" : v); renderMetaFields(); },
+    id:"mselPrio", multi:false, placeholder:"Priorität …",
+    options: PRIOS.map(p => ({ value:p, label:p, color:PRIO_COLOR[p] })),
+    selected: () => editing.prio ? [editing.prio] : [],
+    toggle: v => { editing.prio = (editing.prio===v ? "" : v); renderMetaFields(); },
   });
   renderMsel({
     id:"mselOwners", multi:true, placeholder:"Owner wählen …",
@@ -1939,12 +2353,6 @@ function renderMetaFields(){
     options: owners.map(o => ({ value:o, label:o })),
     selected: () => editing.stakeholder ? [editing.stakeholder] : [],
     toggle: v => { editing.stakeholder = (editing.stakeholder===v ? "" : v); renderMetaFields(); },
-  });
-  renderMsel({
-    id:"mselTags", multi:true, placeholder: tags.length ? "Tags wählen …" : "Keine Tags im Sheet",
-    options: tags.map(t => ({ value:t.name, label:t.name, color:t.color })),
-    selected: () => editing.tags,
-    toggle: v => { const i=editing.tags.indexOf(v); i>=0?editing.tags.splice(i,1):editing.tags.push(v); renderMetaFields(); },
   });
   // Blocked by: alle anderen Tickets als Optionen (sich selbst ausschließen)
   if(!Array.isArray(editing.blockedBy)) editing.blockedBy = editing.blockedBy ? [editing.blockedBy] : [];
@@ -2052,13 +2460,24 @@ function renderMsel(cfg){
 function closeAllMsel(){ document.querySelectorAll(".msel.open").forEach(m => m.classList.remove("open")); }
 function renderStagePath(){
   const sp = $("#stagePath"); sp.innerHTML = "";
+  const wrap = document.createElement("div");
+  wrap.className = "status-toggle";
+  // Gleitender Indikator hinter dem aktiven Segment
+  const idx = STATUSES.indexOf(editing.status);
+  wrap.style.setProperty("--idx", Math.max(0, idx));
+  wrap.style.setProperty("--n", STATUSES.length);
+  const slider = document.createElement("span");
+  slider.className = "st-slider" + (editing.status==="Done"?" done":"");
+  wrap.appendChild(slider);
   STATUSES.forEach(st => {
     const b = document.createElement("button");
-    b.className = "stage" + (editing.status===st?" aktiv":"");
+    b.type = "button";
+    b.className = "st-seg" + (editing.status===st?" aktiv":"");
     b.textContent = STATUS_LABEL[st];
     b.onclick = () => { editing.status = st; renderStagePath(); };
-    sp.appendChild(b);
+    wrap.appendChild(b);
   });
+  sp.appendChild(wrap);
 }
 let subDragId = null;   // aktuell gezogener Subtask (für Drag&Drop-Sortierung)
 
@@ -2268,18 +2687,22 @@ function saveDialog(){
   editing.title = $("#fTitle").value.trim() || "";
   editing.goal  = rteGet($("#fGoal"));
   editing.desc  = rteGet($("#fDesc"));
-  // Phase steckt bereits in editing.phaseId (Dropdown setzt sie direkt)
+  editing.start = $("#fStart").value || "";
+  editing.end   = $("#fEnd").value || "";
 
-  // Validierung: Titel, Phase und mindestens ein Owner sind Pflicht
+  // Validierung: Titel + mindestens ein Owner sind Pflicht. Datum optional
+  // (ohne Datum landet das Ticket in der „Ohne Datum"-Liste).
   const fehlt = [];
-  $("#mselPhase").classList.remove("invalid");
   $("#mselOwners").classList.remove("invalid");
   if(!editing.title) fehlt.push("Titel");
-  if(!editing.phaseId){ fehlt.push("Phase"); $("#mselPhase").classList.add("invalid"); }
   if(!editing.owners.length){ fehlt.push("Owner"); $("#mselOwners").classList.add("invalid"); }
+  // Enddatum darf nicht vor Startdatum liegen
+  if(editing.start && editing.end && editing.end < editing.start){
+    fehlt.push("Ende ≥ Start");
+  }
   if(fehlt.length){
     const msg = $("#valMsg");
-    msg.textContent = "Bitte ausfüllen: " + fehlt.join(", ");
+    msg.textContent = "Bitte prüfen: " + fehlt.join(", ");
     msg.classList.add("show");
     if(!editing.title) $("#fTitle").focus();
     return;
@@ -2358,12 +2781,6 @@ $("#btnNew").onclick    = () => openTicket(null);
 $("#overlay").addEventListener("mousedown", e => { if(e.target===$("#overlay")) closeDialog(); });
 document.addEventListener("keydown", e => { if(e.key==="Escape" && $("#overlay").classList.contains("open")) closeDialog(); });
 
-$("#btnFocus").onclick = () => {
-  focusMode = !focusMode;
-  $("#btnFocus").classList.toggle("primary", focusMode);
-  renderBoard();
-};
-
 // Ansicht-Dropdown
 $("#ddViewBtn").onclick = e => { e.stopPropagation(); $("#ddViewPanel").classList.toggle("open"); };
 $("#ddViewPanel").addEventListener("click", e => e.stopPropagation());
@@ -2373,8 +2790,32 @@ $("#ddViewPanel").addEventListener("click", e => e.stopPropagation());
 // Initiale Markierung im View-Dropdown setzen
 [...$("#ddViewPanel").children].forEach(r => r.classList.toggle("sel", r.dataset.view === viewMode));
 document.addEventListener("DOMContentLoaded", () => {});
-{ const b = document.getElementById("btnGraphFit"); if(b) b.onclick = () => graphFit(); }
 
+// Gantt-Einheit (Tage/Wochen) + Heute
+function setGanttUnit(unit){
+  ganttUnit = unit;
+  $("#unitDay").classList.toggle("active", unit==="day");
+  $("#unitWeek").classList.toggle("active", unit==="week");
+  if(viewMode === "gantt") renderGantt();
+}
+$("#unitDay").onclick = () => setGanttUnit("day");
+$("#unitWeek").onclick = () => setGanttUnit("week");
+setGanttUnit("day");
+function setGanttGroup(g){
+  ganttGroup = g;
+  $("#grpNone").classList.toggle("active", g==="none");
+  $("#grpOwner").classList.toggle("active", g==="owner");
+  if(viewMode === "gantt") renderGantt();
+}
+$("#grpNone").onclick = () => setGanttGroup("none");
+$("#grpOwner").onclick = () => setGanttGroup("owner");
+setGanttGroup("none");
+$("#btnLinks").onclick = () => {
+  ganttLinks = !ganttLinks;
+  $("#btnLinks").classList.toggle("active", ganttLinks);
+  if(viewMode === "gantt") renderGantt();
+};
+$("#btnLinks").classList.add("active");
 // Klick aufs Sync-Badge öffnet/schließt das Speicher-Panel (zeigt zuletzt Gespeichertes)
 const _sb = $("#syncBadge");
 if(_sb) _sb.onclick = (e) => { e.stopPropagation(); toggleSavePanel(); };
@@ -2987,14 +3428,10 @@ function initGraphInteraction(){
 
 function renderCurrentView(){
   if(viewMode === "tasks") renderTasks();
-  else if(viewMode === "graph") renderGraph();
-  else renderBoard();
-  renderProgress();
+  else renderGantt();
 }
 
 function renderAll(){
-  collapsed.clear();
-  phases.forEach(p => collapsed.add(p.id+"|Done"));  // Done-Reihen eingeklappt
   renderDropdowns();
   renderCurrentView();
   renderSync();
@@ -3002,7 +3439,7 @@ function renderAll(){
   renderDataWarnung();
 }
 async function boot(){
-  const board = $("#board");
+  const board = $("#ganttInner");
 
   // 1) Cache sofort zeigen, falls vorhanden — kein Warten
   const hatCache = backendConfigured() && loadCache();
@@ -3017,7 +3454,7 @@ async function boot(){
     // Deep-Link schon aus dem Cache heraus öffnen (schnelles Erlebnis)
     if(ticketIdFromHash() && tickets.some(t => t.id === ticketIdFromHash())) openTicketFromHash();
   } else if(backendConfigured()){
-    board.innerHTML = `<div style="color:var(--muted);font-size:14px;padding:8px 2px;">Lade Board …</div>`;
+    board.innerHTML = `<div style="color:var(--muted);font-size:14px;padding:20px 4px;">Lade Gantt …</div>`;
   }
 
   // 2) Frisch vom Sheet laden und ersetzen
@@ -3025,21 +3462,18 @@ async function boot(){
     await load();
   } catch(e){
     if(hatCache){
-      // Cache bleibt sichtbar, nur Hinweis
       const el = $("#syncBadge"); el.className = "sync err"; el.textContent = "⚠ Offline · Cache";
       el._err = "Konnte nicht aktualisieren: " + (e.message||e); el.title = el._err + " — klicken für Details";
       return;
     }
-    board.innerHTML = `<div style="color:var(--overdue);font-size:14px;padding:8px 2px;max-width:520px;">
+    board.innerHTML = `<div style="color:var(--overdue);font-size:14px;padding:20px 4px;max-width:520px;">
       Konnte das Sheet nicht laden: ${esc(e.message||String(e))}<br><br>
-      Prüfe WEBAPP_URL, die Freigabe der Web-App und ob die Tabs (Phases, Tickets, …) existieren.</div>`;
+      Prüfe WEBAPP_URL, die Freigabe der Web-App und ob die Tabs (Owners, Tickets, …) existieren.</div>`;
     return;
   }
   renderAll();
-  // Deep-Link öffnen, sobald die frischen Daten da sind (überschreibt Cache-Vorschau sauber)
   if(ticketIdFromHash() && !$("#overlay").classList.contains("open")) openTicketFromHash();
   else if(ticketIdFromHash() && editing && editing.id === ticketIdFromHash()){
-    // Dialog ist offen aus dem Cache — mit frischen Daten neu füllen
     const frisch = tickets.find(t => t.id === editing.id);
     if(frisch){ editSnapshot = snapshot(editing.id); editing = JSON.parse(JSON.stringify(frisch)); fillDialog(); }
     else { closeDialog(); zeigeToast("Dieses Ticket existiert nicht mehr."); }
