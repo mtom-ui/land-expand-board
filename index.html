@@ -217,6 +217,7 @@
   .gp-text b { color: var(--ink); font-weight: 600; }
   .gp-stats { font-size: 11px; color: var(--muted-hell); white-space: nowrap; display: inline-flex; gap: 12px; }
   .gp-stats .st-over { color: var(--overdue); }
+  .gp-heute { margin-left: auto; font-size: 11.5px; color: var(--muted); white-space: nowrap; }
   .gantt-nodate .nd-head { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
   .gantt-nodate .nd-list { display: flex; flex-wrap: wrap; gap: 7px; }
   .nd-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink);
@@ -230,6 +231,10 @@
   .g-axis { position: sticky; top: 0; left: 0; height: 40px; z-index: 6; background: var(--cream);
             border-bottom: 1px solid var(--line); }
   .g-gridlayer { position: absolute; top: 0; left: 0; z-index: 0; }
+  .g-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 60px 20px; text-align: center; }
+  .g-empty-title { font-size: 16px; font-weight: 600; color: var(--ink); }
+  .g-empty-sub { font-size: 13px; color: var(--muted); max-width: 400px; line-height: 1.5; }
+  .g-empty .btn { margin-top: 6px; }
   .g-corner { position: sticky; position: -webkit-sticky; left: 0; top: 0; height: 40px;
               background: var(--cream); border-bottom: 1px solid var(--line); border-right: 1px solid var(--line);
               z-index: 8; display: block; margin-top: -40px; }
@@ -1683,6 +1688,23 @@ function alleBlockerIds(t, acc){
   });
   return acc;
 }
+// Alle (transitiven) Nachfolger — Tickets, die von t (direkt oder über Ketten) blockiert werden
+function alleNachfolgerIds(t, acc){
+  acc = acc || new Set();
+  tickets.forEach(x => {
+    if(blockerListe(x).some(b => b.id === t.id)){
+      if(!acc.has(x.id)){ acc.add(x.id); alleNachfolgerIds(x, acc); }
+    }
+  });
+  return acc;
+}
+// Ganze Abhängigkeitskette (Blocker + Nachfolger) eines Tickets
+function ketteIds(t){
+  const s = new Set();
+  alleBlockerIds(t).forEach(id => s.add(id));
+  alleNachfolgerIds(t).forEach(id => s.add(id));
+  return s;
+}
 
 /* ===================== DATUMS-HELFER ===================== */
 const MS_TAG = 86400000;
@@ -1888,13 +1910,15 @@ function renderGesamtfortschritt(liste){
   const heute = new Date(); heute.setHours(0,0,0,0);
   const ueberfaellig = liste.filter(t => t.status !== "Done" && parseDate(t.end) && parseDate(t.end) < heute).length;
   const pct = Math.round(done / gesamt * 100);
+  const heuteStr = `${WOCHENTAG[(heute.getDay()+6)%7]}, ${heute.getDate()}. ${MONATE[heute.getMonth()]} ${heute.getFullYear()}`;
   el.innerHTML = `
     <span class="gp-text"><b>${pct}%</b> erledigt</span>
     <div class="gp-bar-wrap"><div class="gp-bar-fill" style="width:${pct}%"></div></div>
     <span class="gp-stats">
       <span>${done}/${gesamt} Tickets</span>
       ${ueberfaellig?`<span class="st-over">⚠ ${ueberfaellig} überfällig</span>`:""}
-    </span>`;
+    </span>
+    <span class="gp-heute">📅 Heute: ${heuteStr}</span>`;
 }
 
 function renderGantt(){
@@ -1910,8 +1934,8 @@ function renderGantt(){
   const dimmedIds = new Set();
   if(filterAktiv){
     treffer.forEach(t => {
-      alleBlockerIds(t).forEach(bid => {
-        if(!sichtbarIds.has(bid)){ sichtbarIds.add(bid); dimmedIds.add(bid); }
+      ketteIds(t).forEach(id => {
+        if(!sichtbarIds.has(id)){ sichtbarIds.add(id); dimmedIds.add(id); }
       });
     });
   }
@@ -1941,7 +1965,24 @@ function renderGantt(){
   }
 
   if(!mitDatum.length){
-    inner.innerHTML = `<div style="color:var(--muted);font-size:14px;padding:20px 4px;">Keine terminierten Tickets. Trage bei einem Ticket Start- und Enddatum ein${ohneDatum.length?" — z.B. aus der Liste oben":""}.</div>`;
+    if(filterAktiv && ohneDatum.length === 0){
+      inner.innerHTML = `<div class="g-empty">
+        <div class="g-empty-title">Keine Treffer</div>
+        <div class="g-empty-sub">Für die aktuellen Filter gibt es keine terminierten Tickets.</div>
+        <button class="btn" id="ganttFilterReset">Filter zurücksetzen</button>
+      </div>`;
+      const rb = $("#ganttFilterReset");
+      if(rb) rb.onclick = () => {
+        ownerFilter.clear(); statusFilter.clear(); prioFilter.clear(); tagFilter.clear();
+        searchQuery = ""; const se = $("#search"); if(se) se.value = "";
+        renderDropdowns(); renderGantt();
+      };
+    } else {
+      inner.innerHTML = `<div class="g-empty">
+        <div class="g-empty-title">Noch nichts terminiert</div>
+        <div class="g-empty-sub">Trage bei einem Ticket Start- und Enddatum ein${ohneDatum.length?" — z.B. aus der Liste oben":""}, damit es hier erscheint.</div>
+      </div>`;
+    }
     return;
   }
 
@@ -2310,7 +2351,10 @@ function bindGanttInteraction(){
       document.body.style.userSelect = "";
       if(!d.moved || !d._ns) return;
       const t = tickets.find(x=>x.id===d.id); if(!t) return;
-      t.start = fmtISO(d._ns); t.end = fmtISO(d._ne);
+      // Sicherheitsnetz: Ende nie vor Start
+      let ns = d._ns, ne = d._ne;
+      if(ne < ns) ne = new Date(ns);
+      t.start = fmtISO(ns); t.end = fmtISO(ne);
       t.updated = jetztTs();
       if(backendConfigured()) enqueue("Termin: " + (t.title||""), [ opUpdate(TAB_TICKETS, "id", t.id, ticketToRow(t)) ]);
       renderGantt();
