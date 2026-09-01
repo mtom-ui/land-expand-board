@@ -37,17 +37,17 @@
     --ink: #FFFFFF;
     --accent: #50DAFF;            /* leuchtendes Cyan = aktiv */
     --accent-dark: #67B5FF;
-    --muted: #B7D7F4;
-    --muted-hell: #6E8FB0;
-    --hilfstext: rgba(183,215,244,.32);
-    --line: rgba(183,215,244,.16);
-    --rahmen: rgba(183,215,244,.24);
-    --line-zart: rgba(183,215,244,.08);
+    --muted: #C9E1F7;
+    --muted-hell: #8FB0D0;
+    --hilfstext: rgba(183,215,244,.5);
+    --line: rgba(183,215,244,.24);
+    --rahmen: rgba(183,215,244,.38);
+    --line-zart: rgba(183,215,244,.12);
     --panel: #065196;
     --overdue: #FF8A6B;
     --gr-done: #4ADE80;
     --on-accent: #001729;
-    --chip: rgba(183,215,244,.08);
+    --chip: rgba(183,215,244,.12);
     --shadow-lg: 0 24px 60px rgba(0,0,0,.5);
   }
   * { box-sizing: border-box; }
@@ -258,7 +258,6 @@
            border: 1px solid var(--rahmen); overflow: hidden; transition: box-shadow .15s, border-color .15s; }
   .g-bar:hover { box-shadow: 0 3px 12px rgba(0,23,41,.16); border-color: var(--accent); z-index: 5; }
   .g-bar:active { cursor: grabbing; }
-  .g-bar.done { opacity: .6; }
   .g-bar.blocked { border-color: var(--overdue); }
   .g-bar.overdue { border-color: var(--overdue); background: color-mix(in srgb, var(--overdue) 8%, var(--panel)); }
   /* Verbindungslinien: dezent per Default, beim Zeilen-Hover leuchten die eigenen auf */
@@ -270,16 +269,27 @@
   .g-row.dimmed .g-rowlabel { opacity: .5; }
   .g-bar.dimmed, .g-milestone.dimmed { opacity: .4; filter: grayscale(.4); }
   .g-bar.dimmed:hover, .g-milestone.dimmed:hover { opacity: .85; filter: none; }
-  .g-bar-prio { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; position: relative; z-index: 1; }
+  .g-bar-prio { display: none; }
+  /* Status-Symbol links (offen / blockiert / erledigt) */
+  .g-status { width: 14px; height: 14px; flex: 0 0 auto; border-radius: 50%; display: inline-flex;
+              align-items: center; justify-content: center; font-size: 9px; line-height: 1; }
+  .g-status.st-open { border: 1.5px solid var(--muted-hell); background: transparent; }
+  .g-status.st-blocked { border: none; background: transparent; font-size: 12px; }
+  .g-status.st-done { background: var(--gr-done); color: #fff; border: none; font-weight: 700; }
+  /* Erledigte Tickets: kräftig grüner Rand + Haken, nicht ausgegraut */
+  .g-bar.done { opacity: 1; border-color: var(--gr-done); border-width: 2px;
+                background: color-mix(in srgb, var(--gr-done) 10%, var(--panel)); }
+  .g-bar.done .g-bar-label { color: var(--ink); }
+  .g-milestone.done .ms-diamond { opacity: 1; background: var(--gr-done); }
+  .g-row.done-row .g-rowtitle { color: var(--muted); }
   .g-bar-label { font-size: 11.5px; font-weight: 500; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 auto; position: relative; z-index: 1; }
   .g-bar-owners { font-size: 9px; color: var(--muted); white-space: nowrap; flex: 0 0 auto; position: relative; z-index: 1; }
   /* Meilenstein (Start == Ende) als Raute */
   .g-milestone { position: absolute; height: 26px; display: flex; align-items: center; gap: 8px; cursor: grab; z-index: 2; }
   .g-milestone:active { cursor: grabbing; }
-  .ms-diamond { width: 15px; height: 15px; transform: rotate(45deg); border-radius: 3px; flex: 0 0 auto;
+  .ms-diamond { width: 15px; height: 15px; transform: rotate(45deg); border-radius: 3px; flex: 0 0 auto; background: var(--accent);
                 box-shadow: 0 1px 4px rgba(0,23,41,.2); transition: box-shadow .15s; }
   .g-milestone:hover .ms-diamond { box-shadow: 0 2px 8px rgba(0,23,41,.35); }
-  .g-milestone.done .ms-diamond { opacity: .5; }
   .g-milestone.overdue .ms-diamond { outline: 2px solid var(--overdue); outline-offset: 1px; }
   .ms-label { font-size: 11.5px; color: var(--ink); white-space: nowrap; pointer-events: none; }
   .g-handle { position: absolute; top: 0; width: 8px; height: 100%; cursor: ew-resize; z-index: 3; }
@@ -809,10 +819,6 @@
     <button class="dd-trigger" id="ddStatusBtn">Status <span class="caret">▼</span></button>
     <div class="dd-panel" id="ddStatusPanel"></div>
   </div>
-  <div class="dd" id="ddPrio">
-    <button class="dd-trigger" id="ddPrioBtn">Priorität <span class="caret">▼</span></button>
-    <div class="dd-panel" id="ddPrioPanel"></div>
-  </div>
   <div class="dd" id="ddTag">
     <button class="dd-trigger" id="ddTagBtn">Tag <span class="caret">▼</span></button>
     <div class="dd-panel" id="ddTagPanel"></div>
@@ -859,13 +865,6 @@
       <div class="mfield">
         <label>Ende</label>
         <input type="date" class="mdate" id="fEnd">
-      </div>
-      <div class="mfield">
-        <label>Priorität</label>
-        <div class="msel" id="mselPrio">
-          <button type="button" class="msel-trigger"><span class="msel-vals"></span><span class="msel-caret">▼</span></button>
-          <div class="msel-panel"></div>
-        </div>
       </div>
       <div class="mfield" id="fldOwners">
         <label>Owner</label>
@@ -1607,17 +1606,6 @@ function renderDropdowns(){
   });
   const c2=document.createElement("button"); c2.className="dd-clear"; c2.textContent="Alle";
   c2.onclick=()=>{ statusFilter.clear(); syncDropdowns(); renderCurrentView(); }; sp.appendChild(c2);
-  // Priorität
-  const pp = $("#ddPrioPanel"); pp.innerHTML = "";
-  PRIOS.forEach(pr => {
-    const r = document.createElement("div");
-    r.className = "dd-opt" + (prioFilter.has(pr)?" sel":"");
-    r.innerHTML = `<span class="box" style="border-color:${PRIO_COLOR[pr]};"></span>${pr}`;
-    r.onclick = () => { prioFilter.has(pr)?prioFilter.delete(pr):prioFilter.add(pr); syncDropdowns(); renderCurrentView(); };
-    pp.appendChild(r);
-  });
-  const c4=document.createElement("button"); c4.className="dd-clear"; c4.textContent="Alle";
-  c4.onclick=()=>{ prioFilter.clear(); syncDropdowns(); renderCurrentView(); }; pp.appendChild(c4);
   // Tags (Einzelauswahl beim Ticket, aber Filter kann mehrere zulassen)
   const tgp = $("#ddTagPanel"); tgp.innerHTML = "";
   if(!tags.length){ tgp.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:6px 8px;">Keine Tags</div>`; }
@@ -1638,31 +1626,25 @@ function syncDropdowns(){
   ob.innerHTML = `Owner${ownerFilter.size?` <span class="cnt">${ownerFilter.size}</span>`:""} <span class="caret">▼</span>`;
   sb.className = "dd-trigger" + (statusFilter.size?" has":"");
   sb.innerHTML = `Status${statusFilter.size?` <span class="cnt">${statusFilter.size}</span>`:""} <span class="caret">▼</span>`;
-  const pb = $("#ddPrioBtn");
-  pb.className = "dd-trigger" + (prioFilter.size?" has":"");
-  pb.innerHTML = `Priorität${prioFilter.size?` <span class="cnt">${prioFilter.size}</span>`:""} <span class="caret">▼</span>`;
   const tgb = $("#ddTagBtn");
   if(tgb){ tgb.className = "dd-trigger" + (tagFilter.size?" has":"");
     tgb.innerHTML = `Tag${tagFilter.size?` <span class="cnt">${tagFilter.size}</span>`:""} <span class="caret">▼</span>`; }
   [...$("#ddOwnerPanel").children].forEach(r=>{ if(r.classList.contains("dd-opt")) r.classList.toggle("sel", ownerFilter.has(r.textContent)); });
   [...$("#ddStatusPanel").children].forEach(r=>{ if(r.classList.contains("dd-opt")) r.classList.toggle("sel", statusFilter.has(r.textContent)); });
-  [...$("#ddPrioPanel").children].forEach(r=>{ if(r.classList.contains("dd-opt")) r.classList.toggle("sel", prioFilter.has(r.textContent)); });
   [...$("#ddTagPanel").children].forEach(r=>{ if(r.classList.contains("dd-opt")) r.classList.toggle("sel", tagFilter.has(r.textContent)); });
 }
 function toggleDD(which){
-  const o=$("#ddOwnerPanel"), s=$("#ddStatusPanel"), p=$("#ddPrioPanel"), tg=$("#ddTagPanel");
-  [o,s,p,tg].forEach(x=>{ if(x) x.classList.remove("open"); });
-  const map = { owner:o, status:s, prio:p, tag:tg };
+  const o=$("#ddOwnerPanel"), s=$("#ddStatusPanel"), tg=$("#ddTagPanel");
+  [o,s,tg].forEach(x=>{ if(x) x.classList.remove("open"); });
+  const map = { owner:o, status:s, tag:tg };
   if(map[which]) map[which].classList.toggle("open");
 }
 $("#ddOwnerBtn").onclick = e => { e.stopPropagation(); toggleDD("owner"); };
 $("#ddStatusBtn").onclick = e => { e.stopPropagation(); toggleDD("status"); };
-$("#ddPrioBtn").onclick = e => { e.stopPropagation(); toggleDD("prio"); };
 $("#ddTagBtn").onclick = e => { e.stopPropagation(); toggleDD("tag"); };
-document.addEventListener("click", () => { $("#ddOwnerPanel").classList.remove("open"); $("#ddStatusPanel").classList.remove("open"); $("#ddPrioPanel")?.classList.remove("open"); $("#ddTagPanel")?.classList.remove("open"); $("#ddViewPanel")?.classList.remove("open"); closeAllSubPanels(); closeAllMsel(); });
+document.addEventListener("click", () => { $("#ddOwnerPanel").classList.remove("open"); $("#ddStatusPanel").classList.remove("open"); $("#ddTagPanel")?.classList.remove("open"); $("#ddViewPanel")?.classList.remove("open"); closeAllSubPanels(); closeAllMsel(); });
 $("#ddOwnerPanel").addEventListener("click", e=>e.stopPropagation());
 $("#ddStatusPanel").addEventListener("click", e=>e.stopPropagation());
-$("#ddPrioPanel").addEventListener("click", e=>e.stopPropagation());
 $("#ddTagPanel")?.addEventListener("click", e=>e.stopPropagation());
 
 $("#search").addEventListener("input", e => { searchQuery = e.target.value.trim().toLowerCase(); renderCurrentView(); });
@@ -1670,7 +1652,6 @@ $("#search").addEventListener("input", e => { searchQuery = e.target.value.trim(
 function passesHardFilter(t){
   if(ownerFilter.size && !t.owners.some(o=>ownerFilter.has(o))) return false;
   if(statusFilter.size && !statusFilter.has(t.status)) return false;
-  if(prioFilter.size && !prioFilter.has(t.prio||"")) return false;
   if(tagFilter.size && !(t.tags||[]).some(tg=>tagFilter.has(tg))) return false;
   return true;
 }
@@ -1929,7 +1910,7 @@ function renderGantt(){
   // Treffer = erfüllt ALLE aktiven Filter (harte Filter + Suche)
   const treffer = tickets.filter(t => passesHardFilter(t) && passesSearch(t));
   // Ist überhaupt ein Filter aktiv? Dann Blocker-Ketten der Treffer ausgegraut mitziehen.
-  const filterAktiv = !!(searchQuery || ownerFilter.size || statusFilter.size || prioFilter.size || tagFilter.size);
+  const filterAktiv = !!(searchQuery || ownerFilter.size || statusFilter.size || tagFilter.size);
   const sichtbarIds = new Set(treffer.map(t => t.id));
   const dimmedIds = new Set();
   if(filterAktiv){
@@ -1973,7 +1954,7 @@ function renderGantt(){
       </div>`;
       const rb = $("#ganttFilterReset");
       if(rb) rb.onclick = () => {
-        ownerFilter.clear(); statusFilter.clear(); prioFilter.clear(); tagFilter.clear();
+        ownerFilter.clear(); statusFilter.clear(); tagFilter.clear();
         searchQuery = ""; const se = $("#search"); if(se) se.value = "";
         renderDropdowns(); renderGantt();
       };
@@ -2011,7 +1992,7 @@ function renderGantt(){
   const sortTickets = arr => arr.slice().sort((a,b) => {
     const sa = parseDate(a.start)-parseDate(b.start);
     if(sa) return sa;
-    return (PRIO_RANG[a.prio||""] - PRIO_RANG[b.prio||""]);
+    return (a.title||"").localeCompare(b.title||"");
   });
 
   // Zeilen-Liste bauen: entweder flach oder nach Owner gruppiert
@@ -2095,39 +2076,36 @@ function renderGantt(){
     const s = parseDate(t.start), e = parseDate(t.end);
     const x = labelW + tageZwischen(start, s) * pxProTag;
     const w = Math.max(pxProTag*0.8, (tageZwischen(s, e)+1) * pxProTag);
-    const farbe = PRIO_COLOR[t.prio] || "var(--muted-hell)";
     const blk = istBlockiert(t);
     const done = t.status === "Done";
     const dauer = tageZwischen(s, e) + 1;
     const meilenstein = dauer === 1;
     const schmal = !meilenstein && w < 130;
-
-    let prog = 0;
-    if(done) prog = 100;
-    else {
-      const gesamt = (e - s) + MS_TAG;
-      const verstrichen = heute - s + MS_TAG;
-      prog = Math.max(0, Math.min(100, Math.round(verstrichen / gesamt * 100)));
-    }
     const ueberfaellig = !done && e < heute;
 
-    const tip = `${t.title} · ${t.start}${meilenstein?"":` – ${t.end}`} (${meilenstein?"Meilenstein":`${dauer} Tage`})${t.prio?` · ${t.prio}`:""} · ${STATUS_LABEL[t.status]||t.status}${!done?` · ${prog}%`:""}`;
+    // Status-Symbol: Erledigt (✓, überschreibt alles) > Blockiert (⭕) > Offen (Kreis)
+    const stCls = done ? "st-done" : (blk ? "st-blocked" : "st-open");
+    const stIcon = done ? "✓" : (blk ? "⭕" : "");
+    const stTitle = done ? "Erledigt" : (blk ? "Blockiert" : "In Arbeit");
+    const statusDot = `<span class="g-status ${stCls}" title="${stTitle}">${stIcon}</span>`;
+
+    const tip = `${t.title} · ${t.start}${meilenstein?"":` – ${t.end}`} (${meilenstein?"Meilenstein":`${dauer} Tage`}) · ${STATUS_LABEL[t.status]||t.status}${blk?" · blockiert":""}${ueberfaellig?" · überfällig":""}`;
     if(!pos[t.id]) pos[t.id] = { x, y: y+7+13, w: meilenstein?26:w, barTop:y+7, barBot:y+7+26, mid:y+7+13, rowIndex:i };
     const dim = dimmedIds.has(t.id) ? " dimmed" : "";
 
     const rowLabel = `
       <div class="g-row${dim}" style="top:${y}px;height:${rowH}px" data-goal-id="${esc(t.id)}">
         <div class="g-rowlabel" style="width:${labelW}px" data-id="${esc(t.id)}" title="${esc(t.title)}">
-          <span class="g-prio" style="background:${farbe}" title="${esc(t.prio||'ohne Priorität')}"></span>
+          ${statusDot}
           <span class="g-rowtitle">${esc(t.title||t.id)}</span>
         </div>
       </div>`;
 
     if(meilenstein){
       balken += rowLabel + `
-        <div class="g-milestone ${done?'done':''} ${ueberfaellig?'overdue':''}${dim}" data-id="${esc(t.id)}"
+        <div class="g-milestone ${done?'done':''} ${ueberfaellig?'overdue':''}${blk?' blocked':''}${dim}" data-id="${esc(t.id)}"
              style="left:${x}px; top:${y+7}px" title="${esc(tip)}">
-          <span class="ms-diamond" style="background:${farbe}"></span>
+          <span class="ms-diamond"></span>
           <span class="ms-label">${esc(t.title||t.id)}</span>
         </div>`;
     } else {
@@ -2135,7 +2113,7 @@ function renderGantt(){
         <div class="g-bar ${done?'done':''} ${blk?'blocked':''} ${schmal?'schmal':''} ${ueberfaellig?'overdue':''}${dim}" data-id="${esc(t.id)}"
              style="left:${x}px; top:${y+7}px; width:${w}px" title="${esc(tip)}">
           <span class="g-handle l"></span>
-          <span class="g-bar-prio" style="background:${farbe}"></span>
+          ${statusDot}
           ${schmal ? "" : `<span class="g-bar-label">${esc(t.title||t.id)}</span><span class="g-bar-owners">${(t.owners||[]).map(initialen).join(" ")}</span>`}
           <span class="g-handle r"></span>
           ${schmal ? `<span class="g-bar-outside">${esc(t.title||t.id)}</span>` : ""}
@@ -2500,12 +2478,6 @@ function fillDialog(){
 // Nur die Dropdown-Felder neu zeichnen (bei Auswahl-Änderungen) — RTE bleibt unangetastet
 function renderMetaFields(){
   if(!Array.isArray(editing.tags)) editing.tags = [];
-  renderMsel({
-    id:"mselPrio", multi:false, placeholder:"Priorität …",
-    options: PRIOS.map(p => ({ value:p, label:p, color:PRIO_COLOR[p] })),
-    selected: () => editing.prio ? [editing.prio] : [],
-    toggle: v => { editing.prio = (editing.prio===v ? "" : v); renderMetaFields(); },
-  });
   renderMsel({
     id:"mselOwners", multi:true, placeholder:"Owner wählen …",
     options: owners.map(o => ({ value:o, label:o })),
