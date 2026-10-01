@@ -68,12 +68,18 @@
   .brand { font-size: 21px; font-weight: 400; letter-spacing: -.015em; }
   .brand b { color: var(--accent); font-weight: 400; }
   .head-spacer { flex: 1; }
-  .btn { border: 1px solid var(--rahmen); background: none; color: var(--muted); padding: 7px 13px;
-         border-radius: var(--feld-radius); transition: border-color .3s var(--weich), color .3s var(--weich); }
-  .btn:hover { border-color: var(--muted); color: var(--ink); }
-  .btn.primary { color: var(--accent); border-color: var(--accent); }
-  .btn.active  { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
-  .btn.primary:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  /* ===== Einheitliche Button-Familie ===== */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+         height: 32px; padding: 0 13px; box-sizing: border-box;
+         border: 1px solid var(--rahmen); background: none; color: var(--muted);
+         font-family: inherit; font-size: 12px; font-weight: 500; letter-spacing: .01em; white-space: nowrap;
+         border-radius: 9px; cursor: pointer;
+         transition: border-color .15s var(--weich), color .15s var(--weich), background .15s var(--weich); }
+  .btn:hover { border-color: var(--muted); color: var(--ink); background: color-mix(in srgb, var(--muted-hell) 8%, transparent); }
+  .btn.primary { color: var(--on-accent); background: var(--accent); border-color: var(--accent); font-weight: 600; }
+  .btn.primary:hover { background: color-mix(in srgb, var(--accent) 88%, #fff); border-color: transparent; color: var(--on-accent); }
+  .btn.active  { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+  .btn.icon-only { width: 32px; padding: 0; }
   .sync-wrap { position: relative; display: inline-flex; }
   .sync { font-size: 11px; letter-spacing: .04em; padding: 4px 6px; white-space: nowrap; cursor: pointer;
           border-radius: var(--feld-radius); transition: opacity .4s, background .15s; }
@@ -115,9 +121,43 @@
   .filter-row .search { max-width: 260px; }
   .gantt-controls { margin-left: auto; display: inline-flex; align-items: center; gap: 10px; }
   .gantt-controls.hidden { display: none; }
+  /* Zahnrad-Einstellungspanel */
+  #gearPanel.gear-panel { min-width: 220px; padding: 8px; left: auto; right: 0; }
+  .gear-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 8px 8px; }
+  .gear-row + .gear-row { border-top: 1px solid var(--line); }
+  .gear-label { font-size: 12px; color: var(--muted); font-weight: 500; }
+  /* kleiner Toggle-Switch */
+  .gear-toggle { width: 40px; height: 22px; border-radius: 20px; border: 1px solid var(--rahmen);
+                 background: var(--chip); cursor: pointer; padding: 0; position: relative; transition: background .2s var(--weich), border-color .2s var(--weich); }
+  .gear-toggle .gt-knob { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%;
+                          background: var(--muted-hell); transition: transform .2s var(--weich), background .2s var(--weich); }
+  .gear-toggle.on { background: color-mix(in srgb, var(--accent) 30%, transparent); border-color: var(--accent); }
+  .gear-toggle.on .gt-knob { transform: translateX(18px); background: var(--accent); }
 
-  /* ===== Fortschrittsbalken oben ===== */
-  .progress-row { display: flex; gap: 48px; padding: 16px 40px 18px; border-bottom: 1px solid var(--line); background: var(--cream); }
+  /* ===== Topbar (alles in einer Zeile) ===== */
+  .topbar { display: flex; align-items: center; gap: 10px; padding: 10px 20px; border-bottom: 1px solid var(--line);
+            background: var(--cream); flex-wrap: wrap; }
+  .topbar .brand { font-size: 18px; font-weight: 400; letter-spacing: -.01em; flex: 0 0 auto; margin-right: 4px; }
+  .topbar .brand b { color: var(--accent); font-weight: 700; }
+  .topbar .search { flex: 1 1 200px; max-width: 320px; }
+  .topbar-progress { font-size: 12px; color: var(--muted-hell); white-space: nowrap; margin-left: auto; }
+  .topbar-progress b { color: var(--ink); font-weight: 600; }
+  .topbar-progress .tp-over { color: var(--overdue); margin-left: 8px; cursor: pointer; }
+  .topbar-progress .tp-over:hover { text-decoration: underline; }
+  .topbar-actions { display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+  /* Sync-Status als dezenter Punkt */
+  .sync-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--gr-done); cursor: pointer;
+              transition: background .2s var(--weich); }
+  .sync-dot.saving { background: var(--accent); animation: pulse 1s ease-in-out infinite; }
+  .sync-dot.err { background: var(--overdue); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .data-warn { display: none; font-size: 13px; color: var(--overdue); cursor: help; }
+  .data-warn.show { display: inline; }
+  /* Zahnrad-Aktion (Neu laden) */
+  .gear-action { font-size: 12px; color: var(--muted); background: none; border: none; cursor: pointer; padding: 0;
+                 transition: color .15s var(--weich); }
+  .gear-action:hover { color: var(--accent); }
+  .gear-hint { font-size: 10.5px; color: var(--muted-hell); }
   .prog { flex: 1 1 0; min-width: 0; }
   .prog-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
   .prog-label { font-size: 9.5px; font-weight: 400; letter-spacing: .15em; text-transform: uppercase; color: var(--muted-hell); }
@@ -145,18 +185,19 @@
                font-variant-numeric: tabular-nums; }
   @media (max-width: 760px){ .progress-row { flex-direction: column; gap: 18px; } }
   .filter-label { font-size: 9.5px; font-weight: 400; letter-spacing: .15em; text-transform: uppercase; color: var(--muted-hell); }
-  .search { flex: 0 0 260px; padding: 8px 12px; border: 1px solid var(--rahmen); border-radius: var(--feld-radius);
-            font-family: inherit; font-size: 13px; color: var(--ink); background: none; transition: border-color .3s var(--weich); }
+  .search { flex: 0 0 240px; height: 32px; box-sizing: border-box; padding: 0 12px; border: 1px solid var(--rahmen); border-radius: 9px;
+            font-family: inherit; font-size: 13px; color: var(--ink); background: none; transition: border-color .15s var(--weich); }
   .search:focus { outline: none; border-color: var(--accent); }
   .search::placeholder { color: var(--hilfstext); }
 
-  /* Dropdown-Filter (Owner, Status) */
+  /* Dropdown-Filter (Owner, Status, Tag) */
   .dd { position: relative; }
-  .dd-trigger { display: inline-flex; align-items: center; gap: 8px; font-size: 10px; font-weight: 400;
-                letter-spacing: .12em; text-transform: uppercase; padding: 7px 12px; border-radius: var(--feld-radius);
-                border: 1px solid var(--rahmen); color: var(--muted); background: none;
-                transition: color .3s var(--weich), border-color .3s var(--weich); }
+  .dd-trigger { display: inline-flex; align-items: center; gap: 7px; height: 32px; box-sizing: border-box;
+                font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+                padding: 0 12px; border-radius: 9px; border: 1px solid var(--rahmen); color: var(--muted); background: none; cursor: pointer;
+                transition: color .15s var(--weich), border-color .15s var(--weich); }
   .dd-trigger:hover { color: var(--ink); border-color: var(--muted); }
+  .dd-trigger.has { color: var(--accent); border-color: var(--accent); }
   .dd-trigger.has { color: var(--accent); border-color: var(--accent); }
   .dd-trigger .caret { font-size: 8px; opacity: .7; }
   .dd-trigger .cnt { color: var(--accent); font-variant-numeric: tabular-nums; }
@@ -185,16 +226,20 @@
   .gantt-view { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
   .gantt-view[hidden] { display: none; }
   .gantt-toolbar { flex: 0 0 auto; display: flex; align-items: center; gap: 14px; padding: 10px 28px; border-bottom: 1px solid var(--line); }
-  .gantt-unit { display: inline-flex; border: 1px solid var(--rahmen); border-radius: var(--feld-radius); overflow: hidden; }
-  .gantt-unit .seg { border: none; background: none; padding: 6px 14px; font-size: 12px; color: var(--muted); cursor: pointer; }
-  .gantt-unit .seg.active { background: var(--accent); color: var(--on-accent); }
+  .gantt-unit { display: inline-flex; height: 32px; border: 1px solid var(--rahmen); border-radius: 9px; overflow: hidden; }
+  .gantt-unit .seg { border: none; background: none; padding: 0 14px; font-size: 12px; font-weight: 500; color: var(--muted); cursor: pointer; transition: background .15s, color .15s; }
+  .gantt-unit .seg:hover { color: var(--ink); }
+  .gantt-unit .seg.active { background: var(--accent); color: var(--on-accent); font-weight: 600; }
   .gantt-hint { font-size: 11px; color: var(--muted-hell); margin-left: auto; }
-  .gantt-group { display: inline-flex; align-items: center; gap: 8px; }
-  .gantt-group .gg-label { font-size: 11px; color: var(--muted-hell); }
-  .gantt-group .seg { border: 1px solid var(--rahmen); background: none; padding: 5px 11px; font-size: 12px; color: var(--muted); cursor: pointer; }
-  .gantt-group .seg:first-of-type { border-radius: var(--feld-radius) 0 0 var(--feld-radius); border-right: none; }
-  .gantt-group .seg:last-of-type { border-radius: 0 var(--feld-radius) var(--feld-radius) 0; }
-  .gantt-group .seg.active { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+  .gantt-group { display: inline-flex; height: 32px; align-items: stretch; }
+  .gantt-group .gg-label { display: none; }
+  .gantt-group .seg { display: inline-flex; align-items: center; border: 1px solid var(--rahmen); background: none; padding: 0 13px;
+                      font-size: 12px; font-weight: 500; color: var(--muted); cursor: pointer; transition: background .15s, color .15s; }
+  .gantt-group .seg:first-of-type { border-radius: 9px 0 0 9px; border-right: none; }
+  .gantt-group .seg:last-of-type { border-radius: 0 9px 9px 0; }
+  .gantt-group .seg:not(:first-of-type):not(:last-of-type) { border-right: none; }
+  .gantt-group .seg:hover { color: var(--ink); }
+  .gantt-group .seg.active { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 600; }
   /* Gruppen-Kopfzeile im Gantt */
   .g-grouprow { background: color-mix(in srgb, var(--accent) 5%, transparent); }
   .g-grouplabel { position: sticky; left: 0; display: flex; align-items: center; gap: 8px; height: 100%;
@@ -249,54 +294,60 @@
   .g-row { position: absolute; left: 0; right: 0; }
   .g-row:nth-child(even) { background: color-mix(in srgb, var(--muted-hell) 3%, transparent); }
   .g-rowlabel { position: sticky; left: 0; display: flex; align-items: center; gap: 7px; height: 100%; padding: 0 12px 0 14px;
-                background: var(--cream); border-right: 1px solid var(--line); cursor: pointer; z-index: 2; box-sizing: border-box; }
+                background: var(--cream); border-right: 1px solid var(--line); cursor: pointer; z-index: 6; box-sizing: border-box; }
   .g-rowlabel:hover .g-rowtitle { color: var(--accent); }
   .g-prio { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
   .g-rowtitle { font-size: 12.5px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .g-bar { position: absolute; height: 26px; border-radius: 7px; z-index: 2; cursor: grab; display: flex; align-items: center; gap: 6px;
-           padding: 0 8px; box-sizing: border-box; background: var(--panel);
-           border: 1px solid var(--rahmen); overflow: hidden; transition: box-shadow .15s, border-color .15s; }
-  .g-bar:hover { box-shadow: 0 3px 12px rgba(0,23,41,.16); border-color: var(--accent); z-index: 5; }
+  .g-bar { position: absolute; height: 24px; border-radius: 6px; z-index: 2; cursor: grab; display: flex; align-items: center; gap: 6px;
+           padding: 0 8px; box-sizing: border-box;
+           background: color-mix(in srgb, var(--bar, var(--muted-hell)) 22%, transparent);
+           border: 1px solid transparent; border-left: 3px solid var(--bar, var(--muted-hell));
+           overflow: hidden; transition: box-shadow .15s, background .15s; }
+  .g-bar:hover { box-shadow: 0 2px 10px rgba(0,0,0,.25); background: color-mix(in srgb, var(--bar, var(--muted-hell)) 34%, transparent); z-index: 3; }
   .g-bar:active { cursor: grabbing; }
-  .g-bar.blocked { border-color: var(--overdue); }
-  .g-bar.overdue { border-color: var(--overdue); background: color-mix(in srgb, var(--overdue) 8%, var(--panel)); }
+  /* Blockiert: nur der linke Streifen wird zum Warnton, kein voller Rand */
+  .g-bar.blocked { border-left-color: var(--overdue); }
+  /* Überfällig: das einzige laute Signal — deutlicher roter Ton */
+  .g-bar.overdue { border-left-color: var(--overdue);
+                   background: color-mix(in srgb, var(--overdue) 18%, transparent);
+                   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--overdue) 40%, transparent); }
+  /* Erledigt: tritt zurück (ausgegraut, transparent), statt zu leuchten */
+  .g-bar.done { opacity: .5; background: color-mix(in srgb, var(--muted-hell) 14%, transparent);
+                border-left-color: color-mix(in srgb, var(--gr-done) 55%, var(--muted-hell)); }
+  .g-bar.done:hover { opacity: .8; }
   /* Verbindungslinien: dezent per Default, beim Zeilen-Hover leuchten die eigenen auf */
-  /* Linien im Ruhezustand dezent ausgegraut; leuchten nur beim Hover über ihr Ticket auf */
   .g-link { opacity: .1; transition: opacity .15s, stroke-width .15s; }
   .g-links.hover-active .g-link { opacity: .07; }
   .g-links.hover-active .g-link.hot { opacity: 1; stroke-width: 2.4; }
   /* Ausgegraute (bei Suche mitgezogene) Blocker */
   .g-row.dimmed .g-rowlabel { opacity: .5; }
-  .g-bar.dimmed, .g-milestone.dimmed { opacity: .4; filter: grayscale(.4); }
-  .g-bar.dimmed:hover, .g-milestone.dimmed:hover { opacity: .85; filter: none; }
+  .g-bar.dimmed, .g-milestone.dimmed { opacity: .35; filter: grayscale(.4); }
+  .g-bar.dimmed:hover, .g-milestone.dimmed:hover { opacity: .8; filter: none; }
   .g-bar-prio { display: none; }
-  /* Status-Symbol links (offen / blockiert / erledigt) */
+  /* Status-Symbol links im Zeilen-Label (offen / blockiert / erledigt) */
   .g-status { width: 14px; height: 14px; flex: 0 0 auto; border-radius: 50%; display: inline-flex;
               align-items: center; justify-content: center; font-size: 9px; line-height: 1; }
   .g-status.st-open { border: 1.5px solid var(--muted-hell); background: transparent; }
   .g-status.st-blocked { border: none; background: transparent; font-size: 12px; }
   .g-status.st-done { background: var(--gr-done); color: #fff; border: none; font-weight: 700; }
-  /* Erledigte Tickets: kräftig grüner Rand + Haken, nicht ausgegraut */
-  .g-bar.done { opacity: 1; border-color: var(--gr-done); border-width: 2px;
-                background: color-mix(in srgb, var(--gr-done) 10%, var(--panel)); }
-  .g-bar.done .g-bar-label { color: var(--ink); }
-  .g-milestone.done .ms-diamond { opacity: 1; background: var(--gr-done); }
-  .g-row.done-row .g-rowtitle { color: var(--muted); }
-  .g-bar-label { font-size: 11.5px; font-weight: 500; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 auto; position: relative; z-index: 1; }
-  .g-bar-owners { font-size: 9px; color: var(--muted); white-space: nowrap; flex: 0 0 auto; position: relative; z-index: 1; }
+  /* Erledigte Zeile: Titel links tritt zurück */
+  .g-row.done-row .g-rowtitle { color: var(--muted-hell); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--muted-hell) 50%, transparent); }
+  /* Balken-Beschriftung: nur noch als Fallback bei sehr breiten Balken; standardmäßig aus */
+  .g-bar-label { display: none; }
+  .g-bar-owners { display: none; }
   /* Meilenstein (Start == Ende) als Raute */
-  .g-milestone { position: absolute; height: 26px; display: flex; align-items: center; gap: 8px; cursor: grab; z-index: 2; }
+  .g-milestone { position: absolute; height: 24px; display: flex; align-items: center; gap: 8px; cursor: grab; z-index: 2; }
   .g-milestone:active { cursor: grabbing; }
-  .ms-diamond { width: 15px; height: 15px; transform: rotate(45deg); border-radius: 3px; flex: 0 0 auto; background: var(--accent);
-                box-shadow: 0 1px 4px rgba(0,23,41,.2); transition: box-shadow .15s; }
-  .g-milestone:hover .ms-diamond { box-shadow: 0 2px 8px rgba(0,23,41,.35); }
+  .ms-diamond { width: 13px; height: 13px; transform: rotate(45deg); border-radius: 3px; flex: 0 0 auto; background: var(--bar, var(--muted-hell));
+                box-shadow: 0 1px 4px rgba(0,0,0,.25); transition: box-shadow .15s; }
+  .g-milestone:hover .ms-diamond { box-shadow: 0 2px 8px rgba(0,0,0,.4); }
+  .g-milestone.done .ms-diamond { opacity: .5; }
   .g-milestone.overdue .ms-diamond { outline: 2px solid var(--overdue); outline-offset: 1px; }
-  .ms-label { font-size: 11.5px; color: var(--ink); white-space: nowrap; pointer-events: none; }
+  .ms-label { font-size: 11.5px; color: var(--muted); white-space: nowrap; pointer-events: none; }
   .g-handle { position: absolute; top: 0; width: 8px; height: 100%; cursor: ew-resize; z-index: 3; }
   .g-handle.l { left: 0; } .g-handle.r { right: 0; }
   .g-bar.schmal { overflow: visible; }
-  .g-bar-outside { position: absolute; left: calc(100% + 7px); top: 50%; transform: translateY(-50%);
-                   font-size: 11.5px; color: var(--ink); white-space: nowrap; pointer-events: none; }
+  .g-bar-outside { display: none; }
   /* Ziel-Popover beim Hover über die Zeile */
   .g-goal-pop { position: absolute; z-index: 20; max-width: 360px; min-width: 200px; padding: 12px 14px; border-radius: 10px;
                 background: var(--cream); border: 1px solid var(--line); box-shadow: var(--shadow-lg);
@@ -546,7 +597,8 @@
     .status-toggle { width: 100%; }
   }
 
-  .modal-body { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 36px; overflow: hidden; }
+  .modal-body { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: 1fr 1fr 1.15fr; gap: 30px;
+                overflow-y: auto; align-content: start; padding-right: 4px; }
   .mcol { min-width: 0; overflow-y: auto; padding-right: 6px; display: flex; flex-direction: column; }
   @media (max-width: 1000px){
     .modal-body { grid-template-columns: 1fr; gap: 0; overflow: visible; }
@@ -602,10 +654,8 @@
   .md blockquote { margin: 5px 0; padding: 1px 0 1px 11px; border-left: 2px solid var(--accent); color: var(--muted); }
   .md strong { font-weight: 700; }
   .md p, .md div { margin: 0; }
-  /* Ziel- und Beschreibungsspalte: das RTE-Feld füllt die Spaltenhöhe */
-  #mcolGoal .field, #mcolDesc .field { flex: 1 1 auto; display: flex; flex-direction: column; }
-  #mcolGoal .rte-wrap, #mcolDesc .rte-wrap { flex: 1 1 auto; display: flex; flex-direction: column; }
-  #mcolGoal .rte, #mcolDesc .rte { flex: 1 1 auto; }
+  /* Ziel- und Beschreibungsfeld: wächst mit dem Inhalt, moderate Mindesthöhe, scrollt bei viel Text */
+  #mcolGoal .rte, #mcolDesc .rte { min-height: 80px; max-height: 340px; overflow-y: auto; }
   /* Ziel = "Vorgabe": dezent getöntes Panel, hebt sich als etwas Gesetztes ab */
   #mcolGoal .rte-wrap { background: color-mix(in srgb, var(--accent) 5%, transparent);
                         border-color: color-mix(in srgb, var(--accent) 28%, var(--rahmen)); }
@@ -795,7 +845,7 @@
   .sub-head { display: flex; align-items: baseline; justify-content: space-between; }
   .sub-head h4 { margin: 0 0 12px; font-size: 9px; font-weight: 400; letter-spacing: .14em; text-transform: uppercase;
                  color: var(--muted-hell); }
-  .sub-count { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .sub-count { display: none; }
 
   .modal-actions { flex: 0 0 auto; display: flex; gap: 8px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); align-items: center; }
   .val-msg { font-size: 12px; color: var(--overdue); margin-right: auto; opacity: 0; transition: opacity .2s; }
@@ -824,32 +874,8 @@
 </head>
 <body>
 
-<header>
-  <div class="head-row">
-    <div class="brand">Land &amp; <b>Expand</b></div>
-    <div class="head-spacer"></div>
-    <span class="last-upd" id="lastUpd"></span>
-    <span class="data-warn" id="dataWarn" title="">⚠ Datenproblem</span>
-    <div class="sync-wrap" id="syncWrap">
-      <span class="sync ok fade" id="syncBadge"></span>
-      <div class="save-panel" id="savePanel" hidden></div>
-    </div>
-    <button class="btn" id="btnRefresh" title="Neu aus dem Sheet laden">↻</button>
-    <div class="dd" id="ddView">
-      <button class="dd-trigger" id="ddViewBtn">Ansicht: Gantt <span class="caret">▼</span></button>
-      <div class="dd-panel" id="ddViewPanel">
-        <div class="dd-opt" data-view="gantt"><span class="box"></span>Gantt</div>
-        <div class="dd-opt" data-view="tasks"><span class="box"></span>Aufgaben</div>
-      </div>
-    </div>
-    <button class="btn" id="btnTheme">Dunkel</button>
-    <button class="btn primary" id="btnNew">+ Neues Ticket</button>
-  </div>
-</header>
-
-
-
-<div class="filter-row" id="filterRow">
+<div class="topbar" id="filterRow">
+  <div class="brand" title="Land & Expand">L&amp;<b>E</b></div>
   <input class="search" id="search" type="search" placeholder="Suchen …">
   <div class="dd" id="ddOwner">
     <button class="dd-trigger" id="ddOwnerBtn">Owner <span class="caret">▼</span></button>
@@ -863,23 +889,49 @@
     <button class="dd-trigger" id="ddTagBtn">Tag <span class="caret">▼</span></button>
     <div class="dd-panel" id="ddTagPanel"></div>
   </div>
-  <!-- Gantt-spezifische Controls (in der Aufgaben-Ansicht ausgeblendet) -->
   <div class="gantt-controls" id="ganttControls">
-    <div class="gantt-unit">
-      <button class="seg" id="unitDay" data-unit="day">Tage</button>
-      <button class="seg" id="unitWeek" data-unit="week">Wochen</button>
-    </div>
     <div class="gantt-group">
       <button class="seg" id="grpNone" data-group="none">Keine</button>
       <button class="seg" id="grpOwner" data-group="owner">Owner</button>
       <button class="seg" id="grpTag" data-group="tag">Tag</button>
     </div>
-    <button class="btn" id="btnLinks" title="Abhängigkeits-Verbindungen ein-/ausblenden">⇄ Verbindungen</button>
+  </div>
+  <span class="topbar-progress" id="ganttProgress"></span>
+  <div class="topbar-actions">
+    <div class="sync-wrap" id="syncWrap">
+      <span class="sync-dot" id="syncBadge" title="Speicherstatus"></span>
+      <div class="save-panel" id="savePanel" hidden></div>
+    </div>
+    <span class="data-warn" id="dataWarn" title="">⚠</span>
+    <button class="btn primary icon-only" id="btnNew" title="Neues Ticket">+</button>
+    <div class="dd" id="ddGear">
+      <button class="btn icon-only" id="gearBtn" title="Einstellungen">⚙</button>
+      <div class="dd-panel gear-panel" id="gearPanel">
+        <div class="gear-row">
+          <span class="gear-label">Zeitraster</span>
+          <div class="gantt-unit">
+            <button class="seg" id="unitDay" data-unit="day">Tage</button>
+            <button class="seg" id="unitWeek" data-unit="week">Wochen</button>
+          </div>
+        </div>
+        <div class="gear-row">
+          <span class="gear-label">Verbindungen</span>
+          <button class="gear-toggle" id="btnLinks" role="switch"><span class="gt-knob"></span></button>
+        </div>
+        <div class="gear-row">
+          <span class="gear-label">Dunkelmodus</span>
+          <button class="gear-toggle" id="btnTheme" role="switch"><span class="gt-knob"></span></button>
+        </div>
+        <div class="gear-row">
+          <button class="gear-action" id="btnRefresh">↻ Neu laden</button>
+          <span class="gear-hint" id="lastUpd"></span>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
 <div class="gantt-view" id="ganttView">
-  <div class="gantt-progress" id="ganttProgress"></div>
   <div class="gantt-nodate" id="ganttNoDate"></div>
   <div class="gantt-scroll" id="ganttScroll">
     <div class="gantt-inner" id="ganttInner"></div>
@@ -902,11 +954,11 @@
     <div class="meta-chips">
       <div class="mchip" id="fldStart">
         <span class="mc-label">Start</span>
-        <input type="date" class="mc-date" id="fStart">
+        <input type="date" class="mc-date" id="fStart" lang="de">
       </div>
       <div class="mchip" id="fldEnd">
         <span class="mc-label">Ende</span>
-        <input type="date" class="mc-date" id="fEnd">
+        <input type="date" class="mc-date" id="fEnd" lang="de">
       </div>
       <div class="mchip" id="fldOwners">
         <span class="mc-label">Owner</span>
@@ -1274,10 +1326,9 @@ function renderSync(){
   const el = $("#syncBadge"); if(!el) return;
   const offen = queue.filter(j=> j.state !== "fehler").length;
   const fehler = queue.find(j=> j.state === "fehler");
-  if(fehler){ el.className = "sync err"; el.textContent = "⚠ Sync-Fehler"; el.title = "klicken für Details"; el._err = fehler.err || "Unbekannter Fehler"; }
-  else if(offen){ el.className = "sync busy"; el.textContent = "↻ Speichert …"; el.title = "klicken für Verlauf"; el._err = null; }
-  else { el.className = "sync ok"; el.textContent = "✓ Gespeichert"; el.title = "klicken für Verlauf"; el._err = null; setTimeout(()=>{ if(!queue.length && $("#savePanel")?.hidden) el.className = "sync ok fade"; }, 1500); }
-  // Panel live nachziehen, wenn offen
+  if(fehler){ el.className = "sync-dot err"; el.title = "Sync-Fehler — klicken für Details"; el._err = fehler.err || "Unbekannter Fehler"; }
+  else if(offen){ el.className = "sync-dot saving"; el.title = "Speichert …"; el._err = null; }
+  else { el.className = "sync-dot"; el.title = "Gespeichert"; el._err = null; }
   if($("#savePanel") && !$("#savePanel").hidden) renderSavePanel();
 }
 
@@ -1374,10 +1425,11 @@ function renderProgress(){
 /* ---- Laden ---- */
 async function loadFromSheet(){
   const raw = await sheetReadTabs([TAB_PHASES, TAB_OWNERS, TAB_TICKETS, TAB_SUBTASKS, TAB_UPDATES, TAB_TAGS]);
-  for(const t of [TAB_PHASES, TAB_TICKETS]){
+  // Nur "Tickets" ist Pflicht. Phases wird vom Gantt nicht mehr genutzt (optional, alter Tab darf bleiben).
+  for(const t of [TAB_TICKETS]){
     if(!raw[t] || raw[t].error) throw new Error("Tab '" + t + "' fehlt oder ist leer: " + ((raw[t]&&raw[t].error) || "keine Daten"));
   }
-  // Optionale Tabs (Owners, Subtasks, Updates, Tags): fehlend = leer behandeln
+  // Optionale Tabs (Phases, Owners, Subtasks, Updates, Tags): fehlend = leer behandeln
   const rows = t => (raw[t] && !raw[t].error && Array.isArray(raw[t])) ? raw[t] : [];
 
   // Phasen laden und gegen doppelte IDs absichern. Zwei Phasen mit derselben id
@@ -1573,6 +1625,7 @@ let dataWarnung = null;  // Hinweistext bei Sheet-Problemen (doppelte IDs o.Ä.)
 let ganttUnit = "day";   // "day" | "week"
 let ganttGroup = "tag"; // "none" | "owner" | "tag"
 let ganttLinks = true;   // Verbindungslinien anzeigen
+let filterOverdueOnly = false;  // Schnellfilter: nur überfällige
 let viewMode = "gantt";  // "gantt" | "tasks" | "graph"
 let taskOwner = null;    // in der Aufgabenliste gewählter Owner (null = alle)
 
@@ -1685,7 +1738,7 @@ function toggleDD(which){
 $("#ddOwnerBtn").onclick = e => { e.stopPropagation(); toggleDD("owner"); };
 $("#ddStatusBtn").onclick = e => { e.stopPropagation(); toggleDD("status"); };
 $("#ddTagBtn").onclick = e => { e.stopPropagation(); toggleDD("tag"); };
-document.addEventListener("click", () => { $("#ddOwnerPanel").classList.remove("open"); $("#ddStatusPanel").classList.remove("open"); $("#ddTagPanel")?.classList.remove("open"); $("#ddViewPanel")?.classList.remove("open"); closeAllSubPanels(); closeAllMsel(); });
+document.addEventListener("click", () => { $("#ddOwnerPanel").classList.remove("open"); $("#ddStatusPanel").classList.remove("open"); $("#ddTagPanel")?.classList.remove("open"); $("#ddViewPanel")?.classList.remove("open"); $("#gearPanel")?.classList.remove("open"); closeAllSubPanels(); closeAllMsel(); });
 $("#ddOwnerPanel").addEventListener("click", e=>e.stopPropagation());
 $("#ddStatusPanel").addEventListener("click", e=>e.stopPropagation());
 $("#ddTagPanel")?.addEventListener("click", e=>e.stopPropagation());
@@ -1696,6 +1749,11 @@ function passesHardFilter(t){
   if(ownerFilter.size && !t.owners.some(o=>ownerFilter.has(o))) return false;
   if(statusFilter.size && !statusFilter.has(t.status)) return false;
   if(tagFilter.size && !(t.tags||[]).some(tg=>tagFilter.has(tg))) return false;
+  if(filterOverdueOnly){
+    const h = new Date(); h.setHours(0,0,0,0);
+    const e = parseDate(t.end);
+    if(!(t.status !== "Done" && e && e < h)) return false;
+  }
   return true;
 }
 function passesSearch(t){
@@ -1761,9 +1819,6 @@ function setView(mode){
   ganttView.hidden = (mode !== "gantt");
   tasksView.hidden = (mode !== "tasks");
   $("#ganttControls")?.classList.toggle("hidden", mode !== "gantt");
-  const labels = { gantt:"Gantt", tasks:"Aufgaben" };
-  $("#ddViewBtn").innerHTML = `Ansicht: ${labels[mode]||"Gantt"} <span class="caret">▼</span>`;
-  [...$("#ddViewPanel").children].forEach(r => r.classList.toggle("sel", r.dataset.view === mode));
   if(mode === "tasks") renderTasks();
   else renderGantt();
 }
@@ -1928,21 +1983,15 @@ let ganttState = { start:null, end:null, pxProTag:0, drag:null };
 function renderGesamtfortschritt(liste){
   const el = $("#ganttProgress"); if(!el) return;
   const gesamt = liste.length;
-  if(!gesamt){ el.style.display = "none"; return; }
-  el.style.display = "flex";
+  if(!gesamt){ el.innerHTML = ""; return; }
   const done = liste.filter(t => t.status === "Done").length;
   const heute = new Date(); heute.setHours(0,0,0,0);
   const ueberfaellig = liste.filter(t => t.status !== "Done" && parseDate(t.end) && parseDate(t.end) < heute).length;
   const pct = Math.round(done / gesamt * 100);
-  const heuteStr = `${WOCHENTAG[(heute.getDay()+6)%7]}, ${heute.getDate()}. ${MONATE[heute.getMonth()]} ${heute.getFullYear()}`;
-  el.innerHTML = `
-    <span class="gp-text"><b>${pct}%</b> erledigt</span>
-    <div class="gp-bar-wrap"><div class="gp-bar-fill" style="width:${pct}%"></div></div>
-    <span class="gp-stats">
-      <span>${done}/${gesamt} Tickets</span>
-      ${ueberfaellig?`<span class="st-over">⚠ ${ueberfaellig} überfällig</span>`:""}
-    </span>
-    <span class="gp-heute">📅 Heute: ${heuteStr}</span>`;
+  el.innerHTML = `<b>${pct}%</b> · ${done}/${gesamt}${ueberfaellig?`<span class="tp-over" id="tpOver" title="Nur überfällige zeigen">⚠ ${ueberfaellig}</span>`:""}`;
+  // Klick auf Überfällig-Badge: Schnellfilter (nur überfällige)
+  const ov = $("#tpOver");
+  if(ov) ov.onclick = () => { filterOverdueOnly = !filterOverdueOnly; renderGantt(); };
 }
 
 function renderGantt(){
@@ -2027,7 +2076,7 @@ function renderGantt(){
   let end   = woche ? addTage(startOfWeek(maxD), 13) : addTage(maxD, 3);
   const tage = tageZwischen(start, end) + 1;
   const pxProTag = woche ? 26 : 34;
-  const rowH = 40, labelW = 210;
+  const rowH = 40, labelW = 280;
 
   ganttState = { start, end, pxProTag, labelW, rowH };
 
@@ -2123,21 +2172,23 @@ function renderGantt(){
     const done = t.status === "Done";
     const dauer = tageZwischen(s, e) + 1;
     const meilenstein = dauer === 1;
-    const schmal = !meilenstein && w < 130;
     const ueberfaellig = !done && e < heute;
+    // Balkenfarbe = Tag-Farbe (dezente Füllung), Fallback neutral
+    const barColor = ((t.tags && t.tags.length) ? (tagByName(t.tags[0])||{}).color : "") || "var(--muted-hell)";
 
-    // Status-Symbol: Erledigt (✓, überschreibt alles) > Blockiert (⭕) > Offen (Kreis)
+    // Status-Symbol nur noch im Zeilen-Label: Erledigt (✓) > Blockiert (⭕) > Offen (Kreis)
     const stCls = done ? "st-done" : (blk ? "st-blocked" : "st-open");
     const stIcon = done ? "✓" : (blk ? "⭕" : "");
     const stTitle = done ? "Erledigt" : (blk ? "Blockiert" : "In Arbeit");
     const statusDot = `<span class="g-status ${stCls}" title="${stTitle}">${stIcon}</span>`;
 
-    const tip = `${t.title} · ${t.start}${meilenstein?"":` – ${t.end}`} (${meilenstein?"Meilenstein":`${dauer} Tage`}) · ${STATUS_LABEL[t.status]||t.status}${blk?" · blockiert":""}${ueberfaellig?" · überfällig":""}`;
+    const ownerStr = (t.owners||[]).map(initialen).join(" ");
+    const tip = `${t.title} · ${t.start}${meilenstein?"":` – ${t.end}`} (${meilenstein?"Meilenstein":`${dauer} Tage`}) · ${STATUS_LABEL[t.status]||t.status}${ownerStr?` · ${ownerStr}`:""}${blk?" · blockiert":""}${ueberfaellig?" · überfällig":""}`;
     if(!pos[t.id]) pos[t.id] = { x, y: y+7+13, w: meilenstein?26:w, barTop:y+7, barBot:y+7+26, mid:y+7+13, rowIndex:i };
     const dim = dimmedIds.has(t.id) ? " dimmed" : "";
 
     const rowLabel = `
-      <div class="g-row${dim}" style="top:${y}px;height:${rowH}px" data-goal-id="${esc(t.id)}">
+      <div class="g-row${dim}${done?' done-row':''}" style="top:${y}px;height:${rowH}px" data-goal-id="${esc(t.id)}">
         <div class="g-rowlabel" style="width:${labelW}px" data-id="${esc(t.id)}" title="${esc(t.title)}">
           ${statusDot}
           <span class="g-rowtitle">${esc(t.title||t.id)}</span>
@@ -2147,19 +2198,15 @@ function renderGantt(){
     if(meilenstein){
       balken += rowLabel + `
         <div class="g-milestone ${done?'done':''} ${ueberfaellig?'overdue':''}${blk?' blocked':''}${dim}" data-id="${esc(t.id)}"
-             style="left:${x}px; top:${y+7}px" title="${esc(tip)}">
+             style="left:${x}px; top:${y+8}px; --bar:${barColor}" title="${esc(tip)}">
           <span class="ms-diamond"></span>
-          <span class="ms-label">${esc(t.title||t.id)}</span>
         </div>`;
     } else {
       balken += rowLabel + `
-        <div class="g-bar ${done?'done':''} ${blk?'blocked':''} ${schmal?'schmal':''} ${ueberfaellig?'overdue':''}${dim}" data-id="${esc(t.id)}"
-             style="left:${x}px; top:${y+7}px; width:${w}px" title="${esc(tip)}">
+        <div class="g-bar ${done?'done':''} ${blk?'blocked':''} ${ueberfaellig?'overdue':''}${dim}" data-id="${esc(t.id)}"
+             style="left:${x}px; top:${y+8}px; width:${w}px; --bar:${barColor}" title="${esc(tip)}">
           <span class="g-handle l"></span>
-          ${statusDot}
-          ${schmal ? "" : `<span class="g-bar-label">${esc(t.title||t.id)}</span><span class="g-bar-owners">${(t.owners||[]).map(initialen).join(" ")}</span>`}
           <span class="g-handle r"></span>
-          ${schmal ? `<span class="g-bar-outside">${esc(t.title||t.id)}</span>` : ""}
         </div>`;
     }
   });
@@ -2280,11 +2327,18 @@ function bindGoalPopover(){
       ${t.goal && t.goal.trim() ? `<div class="gp-title">📌 Ziel</div><div class="gp-goal">${mdToHtml(t.goal)}</div>` : ""}`;
     $("#ganttInner").appendChild(pop);
     const scRect = scroll.getBoundingClientRect();
-    const maxLeft = scroll.scrollLeft + scRect.width - pop.offsetWidth - 12;
-    let left = Math.max(ganttState.labelW + 4, ankerLeft);
-    left = Math.min(left, Math.max(ganttState.labelW + 4, maxLeft));
+    // Sichtbarer Bereich (rechts von der fixierten Label-Spalte), im ganttInner-Koordinatensystem:
+    const sichtbarLinks = scroll.scrollLeft + ganttState.labelW + 8;
+    const sichtbarRechts = scroll.scrollLeft + scRect.width - pop.offsetWidth - 12;
+    let left = Math.max(sichtbarLinks, ankerLeft);
+    left = Math.min(left, Math.max(sichtbarLinks, sichtbarRechts));
     pop.style.left = left + "px";
-    pop.style.top = (ankerTop + 30) + "px";
+    // Vertikal im sichtbaren Bereich halten
+    const sichtbarOben = scroll.scrollTop + 44;
+    const sichtbarUnten = scroll.scrollTop + scroll.clientHeight - pop.offsetHeight - 8;
+    let top = ankerTop + 30;
+    top = Math.min(Math.max(top, sichtbarOben), Math.max(sichtbarOben, sichtbarUnten));
+    pop.style.top = top + "px";
     requestAnimationFrame(() => pop && pop.classList.add("show"));
   }
   const inner = $("#ganttInner");
@@ -2300,7 +2354,7 @@ function bindGoalPopover(){
     if(!t) return;
     const row = lbl.closest(".g-row");
     const top = row ? (parseFloat(row.style.top)||0) : 0;
-    lbl.addEventListener("mouseenter", () => zeige(t, ganttState.labelW + 4, top));
+    lbl.addEventListener("mouseenter", () => zeige(t, scroll.scrollLeft + ganttState.labelW + 8, top));
     lbl.addEventListener("mouseleave", entferne);
   });
   if(scroll && !scroll._popClean){ scroll._popClean = true; scroll.addEventListener("scroll", entferne); }
@@ -3049,16 +3103,6 @@ $("#btnNew").onclick    = () => openTicket(null);
 $("#overlay").addEventListener("mousedown", e => { if(e.target===$("#overlay")) closeDialogGeprueft(); });
 document.addEventListener("keydown", e => { if(e.key==="Escape" && $("#overlay").classList.contains("open")) closeDialogGeprueft(); });
 
-// Ansicht-Dropdown
-$("#ddViewBtn").onclick = e => { e.stopPropagation(); $("#ddViewPanel").classList.toggle("open"); };
-$("#ddViewPanel").addEventListener("click", e => e.stopPropagation());
-[...$("#ddViewPanel").children].forEach(r => {
-  r.onclick = () => { setView(r.dataset.view); $("#ddViewPanel").classList.remove("open"); };
-});
-// Initiale Markierung im View-Dropdown setzen
-[...$("#ddViewPanel").children].forEach(r => r.classList.toggle("sel", r.dataset.view === viewMode));
-document.addEventListener("DOMContentLoaded", () => {});
-
 // Gantt-Einheit (Tage/Wochen) + Heute
 function setGanttUnit(unit){
   ganttUnit = unit;
@@ -3082,10 +3126,13 @@ $("#grpTag").onclick = () => setGanttGroup("tag");
 setGanttGroup("tag");
 $("#btnLinks").onclick = () => {
   ganttLinks = !ganttLinks;
-  $("#btnLinks").classList.toggle("active", ganttLinks);
+  $("#btnLinks").classList.toggle("on", ganttLinks);
   if(viewMode === "gantt") renderGantt();
 };
-$("#btnLinks").classList.add("active");
+$("#btnLinks").classList.add("on");
+// Zahnrad-Panel öffnen/schließen
+$("#gearBtn").onclick = e => { e.stopPropagation(); $("#gearPanel").classList.toggle("open"); };
+$("#gearPanel").addEventListener("click", e => e.stopPropagation());
 // Klick aufs Sync-Badge öffnet/schließt das Speicher-Panel (zeigt zuletzt Gespeichertes)
 const _sb = $("#syncBadge");
 if(_sb) _sb.onclick = (e) => { e.stopPropagation(); toggleSavePanel(); };
@@ -3118,12 +3165,12 @@ $("#btnRefresh").onclick = async () => {
 
 /* ===================== THEME ===================== */
 $("#btnTheme").onclick = () => {
-  document.body.classList.toggle("dark");
-  $("#btnTheme").textContent = document.body.classList.contains("dark") ? "Hell" : "Dunkel";
+  const dark = document.body.classList.toggle("dark");
+  $("#btnTheme").classList.toggle("on", dark);
 };
 // Dunkelmodus als Standard
 document.body.classList.add("dark");
-$("#btnTheme").textContent = "Hell";
+$("#btnTheme").classList.add("on");
 
 /* ===================== RICH-TEXT (Markdown ⇄ HTML) ===================== */
 /* Gespeichert wird Markdown. Im Editor als HTML gerendert, beim Speichern zurück. */
@@ -3721,8 +3768,9 @@ async function boot(){
     const alter = cacheAge();
     if(alter != null){
       const min = Math.round(alter/60000);
-      $("#syncBadge").className = "sync ok";
-      $("#syncBadge").textContent = min < 1 ? "Cache · gerade eben" : `Cache · vor ${min} Min`;
+      const el = $("#syncBadge");
+      el.className = "sync-dot";
+      el.title = min < 1 ? "Aus Cache geladen (gerade eben) — aktualisiert …" : `Aus Cache geladen (vor ${min} Min) — aktualisiert …`;
     }
     // Deep-Link schon aus dem Cache heraus öffnen (schnelles Erlebnis)
     if(ticketIdFromHash() && tickets.some(t => t.id === ticketIdFromHash())) openTicketFromHash();
@@ -3735,8 +3783,8 @@ async function boot(){
     await load();
   } catch(e){
     if(hatCache){
-      const el = $("#syncBadge"); el.className = "sync err"; el.textContent = "⚠ Offline · Cache";
-      el._err = "Konnte nicht aktualisieren: " + (e.message||e); el.title = el._err + " — klicken für Details";
+      const el = $("#syncBadge"); el.className = "sync-dot err";
+      el._err = "Konnte nicht aktualisieren: " + (e.message||e); el.title = "Offline — Cache wird angezeigt. " + el._err;
       return;
     }
     board.innerHTML = `<div style="color:var(--overdue);font-size:14px;padding:20px 4px;max-width:520px;">
